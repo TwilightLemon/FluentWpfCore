@@ -1,0 +1,35 @@
+﻿<Application x:Class="Example.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fluent="https://github.com/TwilightLemon/FluentWpfCore"
+             xmlns:local="clr-namespace:Example"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--  引入 FluentWpfCore 默认主题  -->
+                <ResourceDictionary Source="pack://application:,,,/FluentWpfCore;component/Themes/Generic.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <!--  自定义颜色值  -->
+            <SolidColorBrush x:Key="AccentColor" Color="#FFFF8541" />
+            <SolidColorBrush x:Key="ForegroundColor" Color="#FF0E0E0E" />
+            <!--  在全局使用FluentStyle  -->
+            <Style TargetType="{x:Type ToolTip}">
+                <Setter Property="fluent:FluentStyle.UseFluentStyle" Value="True" />
+                <Setter Property="Background" Value="{DynamicResource PopupBackgroundColor}" />
+                <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
+            </Style>
+            <Style BasedOn="{StaticResource FluentContextMenuStyle}" TargetType="{x:Type ContextMenu}">
+                <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
+            </Style>
+            <Style BasedOn="{StaticResource FluentMenuItemStyle}" TargetType="MenuItem">
+                <Setter Property="Height" Value="36" />
+                <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+            </Style>
+            <Style TargetType="TextBox">
+                <Setter Property="ContextMenu" Value="{StaticResource FluentTextBoxContextMenu}" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

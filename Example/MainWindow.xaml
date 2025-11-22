@@ -1,0 +1,128 @@
+﻿<Window x:Class="Example.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:fluent="https://github.com/TwilightLemon/FluentWpfCore"
+        xmlns:local="clr-namespace:Example"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        Title="MainWindow"
+        Width="800"
+        Height="450"
+        fluent:DwmAnimation.EnableDwmAnimation="True"
+        fluent:WindowMaterial.WindowCorner="Round"
+        Background="Transparent"
+        Topmost="True"
+        mc:Ignorable="d">
+    <Window.Resources>
+        <WindowChrome x:Key="windowChrome" CaptionHeight="32" />
+    </Window.Resources>
+    <Window.Triggers>
+        <EventTrigger RoutedEvent="Button.Click" SourceName="ShowPopupBtn">
+            <BeginStoryboard>
+                <Storyboard>
+                    <BooleanAnimationUsingKeyFrames Storyboard.TargetName="testPopup" Storyboard.TargetProperty="IsOpen">
+                        <DiscreteBooleanKeyFrame KeyTime="0:0:0" Value="True" />
+                    </BooleanAnimationUsingKeyFrames>
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </Window.Triggers>
+
+    <fluent:WindowMaterial.Material>
+        <fluent:WindowMaterial x:Name="windowMaterial"
+                               CompositonColor="#CC6699FF"
+                               IsDarkMode="False"
+                               MaterialMode="Acrylic"
+                               UseWindowComposition="True"
+                               WindowChromeEx="{StaticResource windowChrome}" />
+    </fluent:WindowMaterial.Material>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Menu HorizontalAlignment="Left"
+              VerticalAlignment="Top"
+              Background="Transparent"
+              Foreground="{DynamicResource ForegroundColor}"
+              WindowChrome.IsHitTestVisibleInChrome="True">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New" />
+                <MenuItem Header="_Open" />
+                <MenuItem Header="_Recent Files">
+                    <MenuItem Header="File1.txt" />
+                </MenuItem>
+            </MenuItem>
+
+            <MenuItem Header="_Help" />
+        </Menu>
+        <TextBox Width="220"
+                 Height="22"
+                 Margin="10,60,0,0"
+                 HorizontalAlignment="Left"
+                 VerticalAlignment="Top"
+                 Text="Test ContextMenu"
+                 TextWrapping="Wrap" />
+        <Button x:Name="ShowPopupBtn"
+                Margin="10,97,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top">
+            Show Popup
+        </Button>
+        <fluent:FluentPopup x:Name="testPopup"
+                            Grid.ColumnSpan="2"
+                            Background="{DynamicResource PopupBackgroundColor}"
+                            ExtPopupAnimation="SlideDown"
+                            FollowWindowMoving="False"
+                            Placement="Bottom"
+                            PlacementTarget="{Binding ElementName=ShowPopupBtn}"
+                            StaysOpen="False"
+                            WindowCorner="Round">
+            <Grid Width="180" Height="120">
+                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center">
+                    hello
+                </TextBlock>
+            </Grid>
+        </fluent:FluentPopup>
+        <TextBlock Width="112"
+                   Margin="10,130,0,0"
+                   Padding="8,4"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Background="#69F"
+                   Text="ContextMenu"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap">
+            <TextBlock.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Menu Item 1"
+                              Icon="Cd"
+                              InputGestureText="aa?" />
+                    <MenuItem Header="Menu Item 2">
+                        <MenuItem Header="Child Item 1" Icon="Ab" />
+                        <MenuItem Header="Child Item 2" Icon="Ad" />
+                        <MenuItem Header="Child Item 3"
+                                  IsCheckable="True"
+                                  IsChecked="True" />
+                    </MenuItem>
+                    <MenuItem Header="Menu Item 3" Icon="cd" />
+                </ContextMenu>
+            </TextBlock.ContextMenu>
+        </TextBlock>
+        <TextBlock Width="112"
+                   Height="19"
+                   Margin="10,167,0,0"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Background="Azure"
+                   Text="Hover over me"
+                   TextAlignment="Center"
+                   ToolTip="This is a FluentWpfCore ToolTip!">
+        </TextBlock>
+        <fluent:SmoothScrollViewer x:Name="scrollViewer"
+                                   Grid.Column="1"
+                                   Margin="0,36,0,0">
+            <StackPanel x:Name="panel" Orientation="Vertical" />
+        </fluent:SmoothScrollViewer>
+    </Grid>
+</Window>
