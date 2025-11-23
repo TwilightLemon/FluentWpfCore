@@ -28,8 +28,13 @@ internal static partial class Win32Interop
         }
     }
 
+#if NET7_0_OR_GREATER
     [LibraryImport("user32.dll", SetLastError = true)]
     internal static partial int SetWindowCompositionAttribute(nint hwnd, ref WindowCompositionAttributeData data);
+#else
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
+#endif
 
     internal const int GWL_STYLE = -16;
 
@@ -77,11 +82,19 @@ internal static partial class Win32Interop
 
     #region DWM - Desktop Window Manager
 
+#if NET7_0_OR_GREATER
     [LibraryImport("dwmapi.dll")]
     internal static partial nint DwmExtendFrameIntoClientArea(nint hwnd, ref Margins margins);
 
     [LibraryImport("dwmapi.dll")]
     internal static partial int DwmSetWindowAttribute(nint hwnd, DWMWINDOWATTRIBUTE dwAttribute, ref int pvAttribute, int cbAttribute);
+#else
+    [DllImport("dwmapi.dll")]
+    internal static extern IntPtr DwmExtendFrameIntoClientArea(IntPtr hwnd, ref Margins margins);
+
+    [DllImport("dwmapi.dll")]
+    internal static extern int DwmSetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE dwAttribute, ref int pvAttribute, int cbAttribute);
+#endif
 
     [Flags]
     internal enum DWMWINDOWATTRIBUTE

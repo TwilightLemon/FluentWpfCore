@@ -6,6 +6,18 @@ using System.Windows.Media;
 
 namespace FluentWpfCore.Controls;
 
+#if !NET5_0_OR_GREATER
+internal static class MathExtensions
+{
+    public static double Clamp(double value, double min, double max)
+    {
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
+    }
+}
+#endif
+
 /// <summary>
 /// 带平滑滚动效果的 ScrollViewer，支持触摸板和鼠标滚轮的惯性滚动 [Vertical Only]
 /// </summary>
@@ -74,7 +86,11 @@ public class SmoothScrollViewer : ScrollViewer
         if (_isAccuracyControl)
         {
             _targetVelocity = 0;
+#if NET5_0_OR_GREATER
             _targetOffset = Math.Clamp(VerticalOffset - e.Delta, 0, ScrollableHeight);
+#else
+            _targetOffset = MathExtensions.Clamp(VerticalOffset - e.Delta, 0, ScrollableHeight);
+#endif
         }
         else
         {
@@ -119,7 +135,11 @@ public class SmoothScrollViewer : ScrollViewer
             }
 
             _targetVelocity *= Math.Pow(Friction, timeFactor);
+#if NET5_0_OR_GREATER
             currentOffset = Math.Clamp(currentOffset + _targetVelocity * (timeFactor / 24), 0, ScrollableHeight);
+#else
+            currentOffset = MathExtensions.Clamp(currentOffset + _targetVelocity * (timeFactor / 24), 0, ScrollableHeight);
+#endif
         }
 
         ScrollToVerticalOffset(currentOffset);

@@ -49,7 +49,7 @@ public static class MaterialApis
     /// 设置 DWM 窗口属性
     /// </summary>
     internal static int SetWindowAttribute(IntPtr hwnd, Win32Interop.DWMWINDOWATTRIBUTE attribute, int parameter)
-        => Win32Interop.DwmSetWindowAttribute(hwnd, attribute, ref parameter, Marshal.SizeOf<int>());
+        => Win32Interop.DwmSetWindowAttribute(hwnd, attribute, ref parameter, Marshal.SizeOf(typeof(int)));
 
     /// <summary>
     /// 设置窗口圆角样式
@@ -78,8 +78,8 @@ public static class MaterialApis
         var data = new Win32Interop.WindowCompositionAttributeData
         {
             Attribute = Win32Interop.WindowCompositionAttribute.WCA_ACCENT_POLICY,
-            SizeOfData = Marshal.SizeOf<Win32Interop.AccentPolicy>(),
-            Data = Marshal.AllocHGlobal(Marshal.SizeOf<Win32Interop.AccentPolicy>())
+            SizeOfData = Marshal.SizeOf(typeof(Win32Interop.AccentPolicy)),
+            Data = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Win32Interop.AccentPolicy)))
         };
 
         Marshal.StructureToPtr(accent, data.Data, false);

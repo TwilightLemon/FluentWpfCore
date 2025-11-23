@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFrameworks>net10.0-windows;net8.0-windows;net6.0-windows;net48;net47;net46;net45</TargetFrameworks>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<LangVersion>latest</LangVersion>
 
 		<!-- NuGet Package Configuration -->
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>

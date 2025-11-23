@@ -187,8 +187,17 @@ public class FluentPopup : Popup
         }
     }
 
+#if NET8_0_OR_GREATER
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "UpdatePosition")]
     private static extern void CallUpdatePosition(Popup popup);
+#else
+    private static void CallUpdatePosition(Popup popup)
+    {
+        var method = typeof(Popup).GetMethod("UpdatePosition", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        method?.Invoke(popup, null);
+    }
+#endif
 
     private void ApplyFluentHwnd()
     {

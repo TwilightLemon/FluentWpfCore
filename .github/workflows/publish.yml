@@ -1,0 +1,42 @@
+name: Publish to NuGet
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: |
+          10.0.x
+          8.0.x
+          6.0.x
+          
+    - name: Restore dependencies
+      run: dotnet restore FluentWpfCore/FluentWpfCore.csproj
+
+    - name: Build
+      run: dotnet build FluentWpfCore/FluentWpfCore.csproj --configuration Release --no-restore
+
+    - name: Pack
+      run: dotnet pack FluentWpfCore/FluentWpfCore.csproj --configuration Release --no-build --output ./nupkg
+
+    - name: Publish to NuGet
+      run: |
+        dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

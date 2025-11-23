@@ -25,11 +25,31 @@ internal static class PopupHelper
     /// </summary>
     public static IntPtr GetNativeWindowHwnd(this ContextMenu menu) => GetPopup(menu).GetNativeWindowHwnd();
 
+#if NET8_0_OR_GREATER
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_parentPopup")]
     private static extern ref Popup GetPopup(ToolTip tip);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_parentPopup")]
     private static extern ref Popup GetPopup(ContextMenu menu);
+#else
+    /// <summary>
+    /// 使用反射获取 ToolTip 的 _parentPopup 字段
+    /// </summary>
+    private static Popup GetPopup(ToolTip tip)
+    {
+        var field = typeof(ToolTip).GetField("_parentPopup", PrivateInstanceFlag);
+        return field?.GetValue(tip) as Popup ?? throw new InvalidOperationException("Unable to access _parentPopup field");
+    }
+
+    /// <summary>
+    /// 使用反射获取 ContextMenu 的 _parentPopup 字段
+    /// </summary>
+    private static Popup GetPopup(ContextMenu menu)
+    {
+        var field = typeof(ContextMenu).GetField("_parentPopup", PrivateInstanceFlag);
+        return field?.GetValue(menu) as Popup ?? throw new InvalidOperationException("Unable to access _parentPopup field");
+    }
+#endif
 
     /// <summary>
     /// 获取 Popup 的原生窗口句柄
