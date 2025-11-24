@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using FluentWpfCore.Helpers;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 

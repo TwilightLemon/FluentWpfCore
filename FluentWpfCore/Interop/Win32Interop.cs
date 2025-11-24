@@ -11,23 +11,37 @@ internal static partial class Win32Interop
 
 #if NET7_0_OR_GREATER
     [LibraryImport("user32.dll")]
-    internal static partial nint GetWindowLong(nint hWnd, int nIndex);
-
-    [LibraryImport("user32.dll")]
     internal static partial nint SetActiveWindow(nint hWnd);
 #else
-    [DllImport("user32.dll")]
-    internal static extern IntPtr GetWindowLong(IntPtr hWnd, int nIndex);
-
     [DllImport("user32.dll")]
     internal static extern IntPtr SetActiveWindow(IntPtr hWnd);
 #endif
 
-    [DllImport("user32.dll", EntryPoint = "SetWindowLong", SetLastError = true)]
-    private static extern int SetWindowLong32(nint hWnd, int nIndex, int dwNewLong);
+#if NET7_0_OR_GREATER
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowLongW")]
+    private static partial int GetWindowLong32(nint hWnd, int nIndex);
 
-    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtr", SetLastError = true)]
-    private static extern nint SetWindowLongPtr64(nint hWnd, int nIndex, nint dwNewLong);
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    private static partial nint GetWindowLongPtr64(nint hWnd, int nIndex);
+
+    [LibraryImport("user32.dll", EntryPoint = "SetWindowLongW", SetLastError = true)]
+    private static partial int SetWindowLong32(nint hWnd, int nIndex, int dwNewLong);
+
+    [LibraryImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
+    private static partial nint SetWindowLongPtr64(nint hWnd, int nIndex, nint dwNewLong);
+#else
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
+    private static extern int GetWindowLong32(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    private static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongW", SetLastError = true)]
+    private static extern int SetWindowLong32(IntPtr hWnd, int nIndex, int dwNewLong);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
+    private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+#endif
 
 #if NET7_0_OR_GREATER
     [LibraryImport("kernel32.dll", EntryPoint = "SetLastError")]
@@ -43,6 +57,18 @@ internal static partial class Win32Interop
     [DllImport("user32.dll")]
     internal static extern bool IsZoomed(IntPtr hWnd);
 #endif
+
+    internal static nint GetWindowLong(nint hWnd, int nIndex)
+    {
+        if (IntPtr.Size == 4)
+        {
+            return GetWindowLong32(hWnd, nIndex);
+        }
+        else
+        {
+            return GetWindowLongPtr64(hWnd, nIndex);
+        }
+    }
 
     internal static nint SetWindowLong(nint hWnd, int nIndex, nint dwNewLong)
     {
