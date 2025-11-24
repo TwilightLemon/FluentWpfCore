@@ -72,13 +72,15 @@
         <fluent:FluentPopup x:Name="testPopup"
                             Grid.ColumnSpan="2"
                             Background="{DynamicResource PopupBackgroundColor}"
-                            ExtPopupAnimation="SlideDown"
+                            ExtPopupAnimation="Slide"
                             FollowWindowMoving="False"
                             Placement="Bottom"
                             PlacementTarget="{Binding ElementName=ShowPopupBtn}"
                             StaysOpen="False"
                             WindowCorner="Round">
-            <Grid Width="180" Height="120">
+            <Grid Width="180"
+                  Height="120"
+                  Background="Transparent">
                 <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center">
                     hello
                 </TextBlock>
@@ -117,8 +119,7 @@
                    Background="Azure"
                    Text="Hover over me"
                    TextAlignment="Center"
-                   ToolTip="This is a FluentWpfCore ToolTip!">
-        </TextBlock>
+                   ToolTip="This is a FluentWpfCore ToolTip!" />
         <fluent:SmoothScrollViewer x:Name="scrollViewer"
                                    Grid.Column="1"
                                    Margin="0,36,0,0">

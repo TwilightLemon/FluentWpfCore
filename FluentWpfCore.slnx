@@ -1,4 +1,6 @@
 <Solution>
-  <Project Path="Example/Example.csproj" />
+  <Folder Name="/Examples/">
+    <Project Path="Example/Example.csproj" />
+  </Folder>
   <Project Path="FluentWpfCore/FluentWpfCore.csproj" />
 </Solution>

@@ -26,6 +26,7 @@
 
     <!--  菜单动画持续时间  -->
     <Duration x:Key="MenuAnimationDuration">0:0:0.167</Duration>
+    <sys:Double x:Key="MenuAnimationDistance">-30</sys:Double>
 
     <!--  复选标记图标路径数据  -->
     <PathGeometry x:Key="CheckGraph">
@@ -75,7 +76,6 @@
         <Setter Property="MinWidth" Value="140" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="Margin" Value="0" />
-        <Setter Property="HasDropShadow" Value="False" />
         <Setter Property="Grid.IsSharedSizeScope" Value="True" />
         <Setter Property="Popup.PopupAnimation" Value="None" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
@@ -88,11 +88,13 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
-                        <!--  用于动画的转换变换  -->
-                        <Border.RenderTransform>
-                            <TranslateTransform />
-                        </Border.RenderTransform>
-                        <ScrollViewer CanContentScroll="True" Style="{StaticResource MenuItemScrollViewerStyle}">
+                        <ScrollViewer x:Name="scrollViewer"
+                                      CanContentScroll="True"
+                                      Style="{StaticResource MenuItemScrollViewerStyle}">
+                            <!--  用于动画的转换变换  -->
+                            <ScrollViewer.RenderTransform>
+                                <TranslateTransform />
+                            </ScrollViewer.RenderTransform>
                             <!--  菜单项容器  -->
                             <StackPanel ClipToBounds="True"
                                         IsItemsHost="True"
@@ -106,10 +108,10 @@
                             <Trigger.EnterActions>
                                 <BeginStoryboard>
                                     <Storyboard>
-                                        <!--  Y轴平移动画：从-45向下滑入到0  -->
-                                        <DoubleAnimation Storyboard.TargetName="Border"
-                                                         Storyboard.TargetProperty="(Border.RenderTransform).(TranslateTransform.Y)"
-                                                         From="-45"
+                                        <!--  Y轴平移动画  -->
+                                        <DoubleAnimation Storyboard.TargetName="scrollViewer"
+                                                         Storyboard.TargetProperty="(ScrollViewer.RenderTransform).(TranslateTransform.Y)"
+                                                         From="{StaticResource MenuAnimationDistance}"
                                                          To="0"
                                                          Duration="{StaticResource MenuAnimationDuration}">
                                             <DoubleAnimation.EasingFunction>
@@ -127,7 +129,7 @@
     </Style>
 
     <!--  顶级菜单项头部模板（带子菜单）  -->
-    <ControlTemplate x:Key="{x:Static MenuItem.TopLevelHeaderTemplateKey}" TargetType="{x:Type MenuItem}">
+    <ControlTemplate x:Key="MenuItem.TopLevelHeaderTemplate" TargetType="{x:Type MenuItem}">
         <Border x:Name="Border"
                 Margin="{StaticResource TopLevelItemMargin}"
                 Background="{TemplateBinding Background}"
@@ -170,6 +172,7 @@
                 <controls:FluentPopup x:Name="PART_Popup"
                                       Grid.Row="1"
                                       Grid.Column="0"
+                                      Background="{DynamicResource PopupBackgroundColor}"
                                       Focusable="False"
                                       HorizontalOffset="-12"
                                       IsOpen="{TemplateBinding IsSubmenuOpen}"
@@ -177,9 +180,7 @@
                                       PlacementTarget="{Binding ElementName=Border}"
                                       PopupAnimation="None"
                                       VerticalOffset="1">
-                    <Grid x:Name="SubmenuBorder"
-                          Background="{DynamicResource PopupBackgroundColor}"
-                          SnapsToDevicePixels="True">
+                    <Grid x:Name="SubmenuBorder" SnapsToDevicePixels="True">
                         <!--  子菜单动画变换  -->
                         <Grid.RenderTransform>
                             <TranslateTransform />
@@ -225,7 +226,7 @@
                         <Storyboard>
                             <DoubleAnimation Storyboard.TargetName="SubmenuBorder"
                                              Storyboard.TargetProperty="(Border.RenderTransform).(TranslateTransform.Y)"
-                                             From="-45"
+                                             From="{StaticResource MenuAnimationDistance}"
                                              To="0"
                                              Duration="{StaticResource MenuAnimationDuration}">
                                 <DoubleAnimation.EasingFunction>
@@ -240,7 +241,7 @@
     </ControlTemplate>
 
     <!--  顶级菜单项模板（无子菜单）  -->
-    <ControlTemplate x:Key="{x:Static MenuItem.TopLevelItemTemplateKey}" TargetType="{x:Type MenuItem}">
+    <ControlTemplate x:Key="MenuItem.TopLevelItemTemplate" TargetType="{x:Type MenuItem}">
         <Border x:Name="Border"
                 Margin="{StaticResource TopLevelItemMargin}"
                 Background="{TemplateBinding Background}"
@@ -292,7 +293,7 @@
     </ControlTemplate>
 
     <!--  子菜单项模板（无子级）  -->
-    <ControlTemplate x:Key="{x:Static MenuItem.SubmenuItemTemplateKey}" TargetType="{x:Type MenuItem}">
+    <ControlTemplate x:Key="MenuItem.SubmenuItemTemplate" TargetType="{x:Type MenuItem}">
         <Border x:Name="Border"
                 Margin="{StaticResource MenuItemMargin}"
                 Background="{TemplateBinding Background}"
@@ -380,7 +381,7 @@
     </ControlTemplate>
 
     <!--  子菜单头部模板（带下级子菜单）  -->
-    <ControlTemplate x:Key="{x:Static MenuItem.SubmenuHeaderTemplateKey}" TargetType="{x:Type MenuItem}">
+    <ControlTemplate x:Key="MenuItem.SubmenuHeaderTemplate" TargetType="{x:Type MenuItem}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
@@ -435,12 +436,13 @@
             <!--  子菜单弹出窗口（向右展开）  -->
             <controls:FluentPopup x:Name="PART_Popup"
                                   Grid.Row="1"
+                                  Background="{DynamicResource PopupBackgroundColor}"
                                   Focusable="False"
                                   IsOpen="{TemplateBinding IsSubmenuOpen}"
                                   Placement="Right"
                                   PlacementTarget="{Binding ElementName=MenuItemContent}"
                                   PopupAnimation="None">
-                <Grid x:Name="PopupRoot" Background="{DynamicResource PopupBackgroundColor}">
+                <Grid x:Name="PopupRoot">
                     <!--  子菜单动画变换  -->
                     <Grid.RenderTransform>
                         <TranslateTransform />
@@ -477,10 +479,10 @@
                 <Trigger.EnterActions>
                     <BeginStoryboard>
                         <Storyboard>
-                            <!--  Y轴平移动画：从-45向下滑入到0  -->
+                            <!--  Y轴平移动画  -->
                             <DoubleAnimation Storyboard.TargetName="PopupRoot"
                                              Storyboard.TargetProperty="(Grid.RenderTransform).(TranslateTransform.Y)"
-                                             From="-45"
+                                             From="{StaticResource MenuAnimationDistance}"
                                              To="0"
                                              Duration="{StaticResource MenuAnimationDuration}">
                                 <DoubleAnimation.EasingFunction>
@@ -508,25 +510,25 @@
 
             <!--  顶级菜单项（带子菜单）  -->
             <Trigger Property="Role" Value="TopLevelHeader">
-                <Setter Property="Template" Value="{StaticResource {x:Static MenuItem.TopLevelHeaderTemplateKey}}" />
+                <Setter Property="Template" Value="{StaticResource MenuItem.TopLevelHeaderTemplate}" />
                 <Setter Property="Grid.IsSharedSizeScope" Value="True" />
                 <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
             </Trigger>
 
             <!--  顶级菜单项（无子菜单）  -->
             <Trigger Property="Role" Value="TopLevelItem">
-                <Setter Property="Template" Value="{StaticResource {x:Static MenuItem.TopLevelItemTemplateKey}}" />
+                <Setter Property="Template" Value="{StaticResource MenuItem.TopLevelItemTemplate}" />
                 <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
             </Trigger>
 
             <!--  子菜单项（带子菜单）  -->
             <Trigger Property="Role" Value="SubmenuHeader">
-                <Setter Property="Template" Value="{StaticResource {x:Static MenuItem.SubmenuHeaderTemplateKey}}" />
+                <Setter Property="Template" Value="{StaticResource MenuItem.SubmenuHeaderTemplate}" />
             </Trigger>
 
             <!--  子菜单项（无子菜单）  -->
             <Trigger Property="Role" Value="SubmenuItem">
-                <Setter Property="Template" Value="{StaticResource {x:Static MenuItem.SubmenuItemTemplateKey}}" />
+                <Setter Property="Template" Value="{StaticResource MenuItem.SubmenuItemTemplate}" />
             </Trigger>
         </Style.Triggers>
     </Style>

@@ -53,9 +53,14 @@ public static class DwmAnimation
     private static void EnableDwmAnimation(Window window)
     {
         var hwnd = new WindowInteropHelper(window).Handle;
-        nint style = window.ResizeMode is ResizeMode.NoResize or ResizeMode.CanMinimize
-            ? (nint)(Win32Interop.WS_CAPTION | Win32Interop.WS_MINIMIZEBOX)
-            : (nint)(Win32Interop.WS_CAPTION | Win32Interop.WS_THICKFRAME | Win32Interop.WS_MAXIMIZEBOX | Win32Interop.WS_MINIMIZEBOX);
+        EnableDwmAnimationHwnd(hwnd, window.ResizeMode);
+    }
+
+    public static void EnableDwmAnimationHwnd(nint hwnd, ResizeMode resizeMode)
+    {
+        nint style = resizeMode is ResizeMode.NoResize or ResizeMode.CanMinimize
+                                ? (nint)(Win32Interop.WS_CAPTION | Win32Interop.WS_MINIMIZEBOX)
+                                : (nint)(Win32Interop.WS_CAPTION | Win32Interop.WS_THICKFRAME | Win32Interop.WS_MAXIMIZEBOX | Win32Interop.WS_MINIMIZEBOX);
 
         Win32Interop.SetWindowLongPtr(hwnd, Win32Interop.GWL_STYLE, style);
     }

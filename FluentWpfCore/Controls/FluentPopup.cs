@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using FluentWpfCore.AttachedProperties;
 using FluentWpfCore.Helpers;
 using FluentWpfCore.Interop;
 
@@ -19,16 +20,11 @@ public class FluentPopup : Popup
     public enum ExPopupAnimation
     {
         None,
-        SlideUp,
-        SlideDown
+        Slide,
+        Fade
     }
 
-    private DoubleAnimation? _slideAni;
-
-    static FluentPopup()
-    {
-        IsOpenProperty.OverrideMetadata(typeof(FluentPopup), new FrameworkPropertyMetadata(false, OnIsOpenChanged));
-    }
+    private DoubleAnimation? _popupAnimation;
 
     public FluentPopup()
     {
@@ -76,12 +72,12 @@ public class FluentPopup : Popup
 
     public static readonly DependencyProperty ExtPopupAnimationProperty =
         DependencyProperty.Register(nameof(ExtPopupAnimation), typeof(ExPopupAnimation), typeof(FluentPopup),
-            new PropertyMetadata(ExPopupAnimation.None));
+            new PropertyMetadata(ExPopupAnimation.None, OnExtPopupAnimationChanged));
 
     /// <summary>
-    /// 滑动动画偏移量（像素）
+    /// 滑动动画偏移量
     /// </summary>
-    public uint SlideAnimationOffset { get; set; } = 50;
+    public uint SlideAnimationOffset { get; set; } = 30;
 
     #endregion
 
@@ -120,12 +116,10 @@ public class FluentPopup : Popup
         }
     }
 
-    private static void OnIsOpenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    private static void OnExtPopupAnimationChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is FluentPopup popup && (bool)e.NewValue)
-        {
+        if(d is FluentPopup popup)
             popup.BuildAnimation();
-        }
     }
 
     private void AttachedWindow_SizeChanged(object sender, SizeChangedEventArgs e) => FollowMove();
@@ -147,29 +141,50 @@ public class FluentPopup : Popup
 
     private void BuildAnimation()
     {
-        if (ExtPopupAnimation is ExPopupAnimation.SlideUp or ExPopupAnimation.SlideDown)
+        if (ExtPopupAnimation is ExPopupAnimation.Slide)
         {
-            double offset = ExtPopupAnimation == ExPopupAnimation.SlideUp ? SlideAnimationOffset : -SlideAnimationOffset;
-            _slideAni = new DoubleAnimation(VerticalOffset + offset, VerticalOffset, TimeSpan.FromMilliseconds(300))
+            double offset = GetAnimateFromBottom(this) ? SlideAnimationOffset : -SlideAnimationOffset;
+            _popupAnimation = new DoubleAnimation(VerticalOffset + offset, VerticalOffset, TimeSpan.FromMilliseconds(300))
             {
                 EasingFunction = new CubicEase()
             };
+        }
+        else if (ExtPopupAnimation is ExPopupAnimation.Fade)
+        {
+            _popupAnimation = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300));
+        }
+        else
+        {
+            _popupAnimation = null;
+            BeginAnimation(VerticalOffsetProperty, null);
         }
     }
 
     private void RunPopupAnimation()
     {
-        if (_slideAni != null)
+        if (_popupAnimation != null)
         {
-            BeginAnimation(VerticalOffsetProperty, _slideAni);
+            switch(ExtPopupAnimation)
+            {
+                case ExPopupAnimation.Slide:
+                    BeginAnimation(VerticalOffsetProperty, _popupAnimation);
+                    break;
+                case ExPopupAnimation.Fade:
+                    Child?.BeginAnimation(OpacityProperty, _popupAnimation);
+                    break;
+            }
         }
     }
 
     private void ResetAnimation()
     {
-        if (ExtPopupAnimation is ExPopupAnimation.SlideUp or ExPopupAnimation.SlideDown)
+        if (ExtPopupAnimation is ExPopupAnimation.Slide)
         {
             BeginAnimation(VerticalOffsetProperty, null);
+        }
+        else if (ExtPopupAnimation is ExPopupAnimation.Fade)
+        {
+            Child?.BeginAnimation(OpacityProperty, null);
         }
     }
 
@@ -199,15 +214,30 @@ public class FluentPopup : Popup
     }
 #endif
 
+#if NET8_0_OR_GREATER
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_AnimateFromBottom")]
+    private static extern bool GetAnimateFromBottom(Popup popup);
+#else
+    private static bool GetAnimateFromBottom(Popup popup)
+    {
+        var i = typeof(Popup).GetProperty("AnimateFromBottom", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        return i?.GetValue(popup) is true;
+    }
+#endif
+
     private void ApplyFluentHwnd()
     {
-        PopupHelper.SetPopupWindowMaterial(_windowHandle, Background.Color, WindowCorner);
+        if (IsOpen)
+        {
+            PopupHelper.SetPopupWindowMaterial(_windowHandle, Background.Color, WindowCorner);
+        }
     }
 
     private void ApplyWindowCorner()
     {
-        MaterialApis.SetWindowCorner(_windowHandle, WindowCorner);
+        if (IsOpen)
+            MaterialApis.SetWindowCorner(_windowHandle, WindowCorner);
     }
 
-    #endregion
+#endregion
 }
