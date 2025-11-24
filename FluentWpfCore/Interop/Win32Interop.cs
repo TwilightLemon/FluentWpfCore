@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace FluentWpfCore.Interop;
 
@@ -10,22 +9,68 @@ internal static partial class Win32Interop
 {
     #region User32 - Window Style & Attributes
 
+#if NET7_0_OR_GREATER
+    [LibraryImport("user32.dll")]
+    internal static partial nint GetWindowLong(nint hWnd, int nIndex);
+
+    [LibraryImport("user32.dll")]
+    internal static partial nint SetActiveWindow(nint hWnd);
+#else
+    [DllImport("user32.dll")]
+    internal static extern IntPtr GetWindowLong(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    internal static extern IntPtr SetActiveWindow(IntPtr hWnd);
+#endif
+
     [DllImport("user32.dll", EntryPoint = "SetWindowLong", SetLastError = true)]
     private static extern int SetWindowLong32(nint hWnd, int nIndex, int dwNewLong);
 
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtr", SetLastError = true)]
     private static extern nint SetWindowLongPtr64(nint hWnd, int nIndex, nint dwNewLong);
 
-    internal static nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong)
+#if NET7_0_OR_GREATER
+    [LibraryImport("kernel32.dll", EntryPoint = "SetLastError")]
+    internal static partial void SetLastError(int dwErrorCode);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool IsZoomed(nint hWnd);
+#else
+    [DllImport("kernel32.dll", EntryPoint = "SetLastError")]
+    internal static extern void SetLastError(int dwErrorCode);
+
+    [DllImport("user32.dll")]
+    internal static extern bool IsZoomed(IntPtr hWnd);
+#endif
+
+    internal static nint SetWindowLong(nint hWnd, int nIndex, nint dwNewLong)
     {
-        if (Environment.Is64BitProcess)
+        int error = 0;
+        nint result = 0;
+        // Win32 SetWindowLong doesn't clear error on success
+        SetLastError(0);
+
+        if (IntPtr.Size == 4)
         {
-            return SetWindowLongPtr64(hWnd, nIndex, dwNewLong);
+            // use SetWindowLong
+            int tempResult = SetWindowLong32(hWnd, nIndex, (int)dwNewLong);
+            error = Marshal.GetLastWin32Error();
+            result = tempResult;
         }
         else
         {
-            return SetWindowLong32(hWnd, nIndex, (int)dwNewLong);
+            // use SetWindowLongPtr
+            result = SetWindowLongPtr64(hWnd, nIndex, dwNewLong);
+            error = Marshal.GetLastWin32Error();
         }
+
+        if ((result == 0) && (error != 0))
+        {
+            throw new System.ComponentModel.Win32Exception(error);
+        }
+
+        return result;
     }
 
 #if NET7_0_OR_GREATER
@@ -35,16 +80,6 @@ internal static partial class Win32Interop
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 #endif
-
-    internal const int GWL_STYLE = -16;
-
-    internal const long WS_CAPTION = 0x00C00000L;
-    internal const long WS_MAXIMIZEBOX = 0x00010000L;
-    internal const long WS_MINIMIZEBOX = 0x00020000L;
-    internal const long WS_THICKFRAME = 0x00040000L;
-    internal const long WS_OVERLAPPED = 0x00000000L;
-    internal const long WS_SYSMENU = 0x00080000L;
-    internal const long WS_BORDER = 0x00800000L;
 
     internal enum AccentState
     {

@@ -72,7 +72,7 @@ public class FluentPopup : Popup
 
     public static readonly DependencyProperty ExtPopupAnimationProperty =
         DependencyProperty.Register(nameof(ExtPopupAnimation), typeof(ExPopupAnimation), typeof(FluentPopup),
-            new PropertyMetadata(ExPopupAnimation.None, OnExtPopupAnimationChanged));
+            new PropertyMetadata(ExPopupAnimation.None));
 
     /// <summary>
     /// 滑动动画偏移量
@@ -116,12 +116,6 @@ public class FluentPopup : Popup
         }
     }
 
-    private static void OnExtPopupAnimationChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-    {
-        if(d is FluentPopup popup)
-            popup.BuildAnimation();
-    }
-
     private void AttachedWindow_SizeChanged(object sender, SizeChangedEventArgs e) => FollowMove();
 
     private void AttachedWindow_LocationChanged(object? sender, EventArgs e) => FollowMove();
@@ -162,6 +156,7 @@ public class FluentPopup : Popup
 
     private void RunPopupAnimation()
     {
+        BuildAnimation();
         if (_popupAnimation != null)
         {
             switch(ExtPopupAnimation)
