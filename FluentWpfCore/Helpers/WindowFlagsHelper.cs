@@ -53,6 +53,8 @@ public static class WindowFlagsHelper
 
     public static nint SetWindowLong(nint hWnd, int nIndex, nint dwNewLong)
         =>Win32Interop.SetWindowLong(hWnd, nIndex, dwNewLong);
+    public static nint GetWindowLong(nint hWnd, int nIndex)
+        =>Win32Interop.GetWindowLong(hWnd, nIndex);
 
     public static void SetToolWindow(Window win)
     {

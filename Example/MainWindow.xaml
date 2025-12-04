@@ -11,7 +11,6 @@
         fluent:DwmAnimation.EnableDwmAnimation="True"
         fluent:WindowMaterial.WindowCorner="Round"
         Background="Transparent"
-        Topmost="True"
         mc:Ignorable="d">
     <Window.Resources>
         <WindowChrome x:Key="windowChrome" CaptionHeight="32" />
@@ -54,7 +53,8 @@
                 </MenuItem>
             </MenuItem>
 
-            <MenuItem Header="_Help" />
+            <MenuItem Header="_Check me"  IsCheckable="True" IsChecked="True"/>
+            <MenuItem Header="_Help"  Icon="🐱"/>
         </Menu>
         <TextBox Width="220"
                  Height="22"
@@ -97,9 +97,7 @@
                    TextWrapping="Wrap">
             <TextBlock.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="Menu Item 1"
-                              Icon="Cd"
-                              InputGestureText="aa?" />
+                    <MenuItem Header="Menu Item 1" InputGestureText="aa?" />
                     <MenuItem Header="Menu Item 2">
                         <MenuItem Header="Child Item 1" Icon="Ab" />
                         <MenuItem Header="Child Item 2" Icon="Ad" />
@@ -107,7 +105,9 @@
                                   IsCheckable="True"
                                   IsChecked="True" />
                     </MenuItem>
-                    <MenuItem Header="Menu Item 3" Icon="cd" />
+                    <MenuItem Header="Menu Item 3"
+                              IsCheckable="True"
+                              IsChecked="True" />
                 </ContextMenu>
             </TextBlock.ContextMenu>
         </TextBlock>

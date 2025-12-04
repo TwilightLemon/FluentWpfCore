@@ -254,6 +254,21 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
+                <!--  复选框图标容器  -->
+                <Border x:Name="CheckBoxIconBorder"
+                        Grid.Column="0"
+                        Margin="0,0,6,0"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed">
+                    <Path x:Name="CheckBoxIcon"
+                          Width="10"
+                          Height="10"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          Fill="{TemplateBinding Foreground}"
+                          Stretch="Uniform" />
+                </Border>
+
                 <!--  图标区域  -->
                 <ContentPresenter x:Name="Icon"
                                   Grid.Column="0"
@@ -285,6 +300,14 @@
                 <Setter TargetName="Icon" Property="Margin" Value="0" />
                 <Setter TargetName="HeaderPresenter" Property="Visibility" Value="Collapsed" />
             </Trigger>
+            <!--  可复选时显示复选框图标容器  -->
+            <Trigger Property="IsCheckable" Value="True">
+                <Setter TargetName="CheckBoxIconBorder" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <!--  已选中时显示复选标记  -->
+            <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="CheckBoxIcon" Property="Data" Value="{StaticResource CheckGraph}" />
+            </Trigger>
             <!--  禁用时淡化  -->
             <Trigger Property="IsEnabled" Value="False">
                 <Setter TargetName="Border" Property="Opacity" Value="0.67" />
@@ -313,6 +336,7 @@
                 <!--  复选框图标容器  -->
                 <Border x:Name="CheckBoxIconBorder"
                         Grid.Column="0"
+                        Margin="0,0,6,0"
                         VerticalAlignment="Center"
                         Visibility="Collapsed">
                     <Path x:Name="CheckBoxIcon"
