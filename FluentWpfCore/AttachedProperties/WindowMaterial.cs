@@ -254,7 +254,7 @@ public class WindowMaterial : DependencyObject
         if (_window == null || _hWnd == IntPtr.Zero)
             return;
 
-        bool enable = MaterialMode != MaterialType.None || UseWindowComposition;
+        bool enable = MaterialMode != MaterialType.None;
         if (!enable)
         {
             if (_currentAPI == APIType.COMPOSITION)

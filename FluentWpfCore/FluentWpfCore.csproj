@@ -10,7 +10,7 @@
 		<!-- NuGet Package Configuration -->
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>FluentWpfCore</PackageId>
-		<Version>1.0.0.4</Version>
+		<Version>1.0.1</Version>
 		<Authors>TwilightLemon</Authors>
 		<Product>FluentWpfCore</Product>
 		<Description>A WPF library providing core Fluent Design controls, materials, and visual effects.</Description>
@@ -21,7 +21,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>wpf;fluent;fluent-design;acrylic;mica;ui;controls;material;windows11;dwm;backdrop</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageReleaseNotes>Optimize Menu Control Templates.</PackageReleaseNotes>
+		<PackageReleaseNotes>Optimize SmoothScrollViewer performance, allowing custom model parameters.</PackageReleaseNotes>
 		<PackageIcon>icon.png</PackageIcon>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>

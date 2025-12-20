@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using FluentWpfCore.Helpers;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -6,168 +7,160 @@ using System.Windows.Media;
 
 namespace FluentWpfCore.Controls;
 
-#if !NET5_0_OR_GREATER
-internal static class MathExtensions
-{
-    public static double Clamp(double value, double min, double max)
-    {
-        if (value < min) return min;
-        if (value > max) return max;
-        return value;
-    }
-}
-#endif
-
-/// <summary>
-/// 带平滑滚动效果的 ScrollViewer，支持触摸板和鼠标滚轮的惯性滚动 [Vertical Only]
-/// </summary>
 public class SmoothScrollViewer : ScrollViewer
 {
-    #region Model Parameters
+    private const double ScrollBarUpdateInterval = 1.0 / 24.0; // 24Hz for ScrollBar updates
 
-    /// <summary>
-    /// 缓动模型的叠加速度力度，数值越大，滚动起始速率越快，滚得越远
-    /// </summary>
-    private const double VelocityFactor = 2.0;
+    private double _logicalOffset;   // The actual ScrollViewer offset
+    private double _visualDelta;     // Visual offset delta from logical offset
 
-    /// <summary>
-    /// 缓动模型的速度衰减系数，数值越小，越快停下来
-    /// </summary>
-    private const double Friction = 0.92;
+    private long _lastTimestamp;
+    private double _scrollBarUpdateAccumulator;
+    private bool _isRendering;
 
-    /// <summary>
-    /// 精确模型的插值系数，数值越大，滚动越快接近目标
-    /// </summary>
-    private const double LerpFactor = 0.5;
+    private TranslateTransform? _transform;
 
-    /// <summary>
-    /// 目标帧时间
-    /// </summary>
-    private const double TargetFrameTime = 1.0d / 144;
+    private int _lastScrollDelta;
+    private int _lastScrollingTick;
 
-    #endregion
-
-    #region Fields
-
-    private int _lastScrollingTick = 0;
-    private int _lastScrollDelta = 0;
-    private double _targetOffset = 0;
-    private double _targetVelocity = 0;
-    private long _lastTimestamp = 0;
-    private bool _isRenderingHooked = false;
-    private bool _isAccuracyControl = false;
-
-    #endregion
+    public IScrollPhysics Physics { get; set; } = new DefaultScrollPhysics();
 
     public SmoothScrollViewer()
     {
         IsManipulationEnabled = true;
         PanningMode = PanningMode.VerticalOnly;
-        Unloaded += ScrollViewer_Unloaded;
+
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
     }
 
-    #region Event Handlers
+    #region Lifecycle
 
-    private void ScrollViewer_Unloaded(object sender, RoutedEventArgs e)
+    private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        if (_isRenderingHooked)
+        if (Content is UIElement element)
         {
-            CompositionTarget.Rendering -= OnRendering;
-            _isRenderingHooked = false;
+            _transform = new TranslateTransform();
+            element.RenderTransform = _transform;
+            element.RenderTransformOrigin = new Point(0, 0);
         }
     }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        StopRendering();
+    }
+
+    #endregion
+
+    #region Input
 
     protected override void OnMouseWheel(MouseWheelEventArgs e)
     {
         e.Handled = true;
 
-        _isAccuracyControl = IsTouchpadScroll(e);
-
-        if (_isAccuracyControl)
+        // Lock logical offset at scroll start
+        if (!_isRendering)
         {
-            _targetVelocity = 0;
-#if NET5_0_OR_GREATER
-            _targetOffset = Math.Clamp(VerticalOffset - e.Delta, 0, ScrollableHeight);
-#else
-            _targetOffset = MathExtensions.Clamp(VerticalOffset - e.Delta, 0, ScrollableHeight);
-#endif
-        }
-        else
-        {
-            _targetVelocity += -e.Delta * VelocityFactor;
+            _logicalOffset = VerticalOffset;
+            _visualDelta = 0;
         }
 
-        if (!_isRenderingHooked)
-        {
-            _lastTimestamp = Stopwatch.GetTimestamp();
-            CompositionTarget.Rendering += OnRendering;
-            _isRenderingHooked = true;
-        }
-    }
+        bool isPrecision = IsTouchpadScroll(e);
+        Physics.OnScroll(_logicalOffset + _visualDelta, e.Delta, isPrecision, 0, ScrollableHeight);
 
-    private void OnRendering(object? sender, EventArgs e)
-    {
-        long currentTimestamp = Stopwatch.GetTimestamp();
-        double deltaTime = (double)(currentTimestamp - _lastTimestamp) / Stopwatch.Frequency;
-        _lastTimestamp = currentTimestamp;
-
-        double timeFactor = deltaTime / TargetFrameTime;
-        double currentOffset = VerticalOffset;
-
-        if (_isAccuracyControl)
-        {
-            double lerpAmount = 1.0 - Math.Pow(1.0 - LerpFactor, timeFactor);
-            currentOffset += (_targetOffset - currentOffset) * lerpAmount;
-
-            if (Math.Abs(_targetOffset - currentOffset) < 0.5)
-            {
-                currentOffset = _targetOffset;
-                StopRendering();
-            }
-        }
-        else
-        {
-            if (Math.Abs(_targetVelocity) < 0.1)
-            {
-                _targetVelocity = 0;
-                StopRendering();
-                return;
-            }
-
-            _targetVelocity *= Math.Pow(Friction, timeFactor);
-#if NET5_0_OR_GREATER
-            currentOffset = Math.Clamp(currentOffset + _targetVelocity * (timeFactor / 24), 0, ScrollableHeight);
-#else
-            currentOffset = MathExtensions.Clamp(currentOffset + _targetVelocity * (timeFactor / 24), 0, ScrollableHeight);
-#endif
-        }
-
-        ScrollToVerticalOffset(currentOffset);
+        StartRendering();
     }
 
     #endregion
 
-    #region Helper Methods
+    #region Rendering Loop
 
-    /// <summary>
-    /// 判断 MouseWheel 事件由鼠标触发还是由触控板触发
-    /// </summary>
+    private void StartRendering()
+    {
+        if (_isRendering) return;
+
+        _lastTimestamp = Stopwatch.GetTimestamp();
+        _scrollBarUpdateAccumulator = 0;
+        CompositionTarget.Rendering += OnRendering;
+        _isRendering = true;
+    }
+
+    private void StopRendering()
+    {
+        if (!_isRendering) return;
+
+        CompositionTarget.Rendering -= OnRendering;
+        _isRendering = false;
+
+        // Final settlement: sync logical offset
+        double finalOffset = Clamp(_logicalOffset + _visualDelta, 0, ScrollableHeight);
+        ScrollToVerticalOffset(finalOffset);
+
+        // Clear visual delta and reset transform
+        _visualDelta = 0;
+        _logicalOffset = finalOffset;
+        _transform?.Y = 0;
+    }
+
+    private void OnRendering(object? sender, EventArgs e)
+    {
+        long now = Stopwatch.GetTimestamp();
+        double dt = (double)(now - _lastTimestamp) / Stopwatch.Frequency;
+        _lastTimestamp = now;
+
+        double currentVisualOffset = _logicalOffset + _visualDelta;
+        double newVisualOffset = Physics.Update(currentVisualOffset, dt, 0, ScrollableHeight);
+
+        if (Physics.IsStable)
+        {
+            _visualDelta = newVisualOffset - _logicalOffset;
+            StopRendering();
+            return;
+        }
+
+        // Update ScrollBar thumb at 24Hz (without triggering layout)
+        _scrollBarUpdateAccumulator += dt;
+        if (_scrollBarUpdateAccumulator >= ScrollBarUpdateInterval)
+        {
+            _scrollBarUpdateAccumulator = 0;
+            
+            // Sync logical offset to trigger virtualization
+            ScrollToVerticalOffset(newVisualOffset);
+            _logicalOffset = newVisualOffset;
+            _visualDelta = 0;
+            _transform?.Y = 0;
+        }
+        else
+        {
+            _visualDelta = newVisualOffset - _logicalOffset;
+            _transform?.Y = -_visualDelta;
+        }
+    }
+
+    #endregion
+
+    #region Helpers
+
     private bool IsTouchpadScroll(MouseWheelEventArgs e)
     {
         var tickCount = Environment.TickCount;
         var isTouchpadScrolling =
             e.Delta % Mouse.MouseWheelDeltaForOneLine != 0 ||
-            (tickCount - _lastScrollingTick < 100 && _lastScrollDelta % Mouse.MouseWheelDeltaForOneLine != 0);
+            (tickCount - _lastScrollingTick < 100 &&
+             _lastScrollDelta % Mouse.MouseWheelDeltaForOneLine != 0);
 
         _lastScrollDelta = e.Delta;
         _lastScrollingTick = e.Timestamp;
         return isTouchpadScrolling;
     }
 
-    private void StopRendering()
+    //For .net 4.5 compatibility
+    private static double Clamp(double value, double min, double max)
     {
-        CompositionTarget.Rendering -= OnRendering;
-        _isRenderingHooked = false;
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
     }
 
     #endregion
