@@ -1,4 +1,5 @@
 ﻿using FluentWpfCore.Helpers;
+using FluentWpfCore.ScrollPhysics;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -6,7 +7,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 namespace FluentWpfCore.Controls;
-
 public class SmoothScrollViewer : ScrollViewer
 {
     private const double ScrollBarUpdateInterval = 1.0 / 24.0; // 24Hz for ScrollBar updates
@@ -94,7 +94,11 @@ public class SmoothScrollViewer : ScrollViewer
         _isRendering = false;
 
         // Final settlement: sync logical offset
-        double finalOffset = Clamp(_logicalOffset + _visualDelta, 0, ScrollableHeight);
+#if NET5_0_OR_GREATER
+        double finalOffset = Math.Clamp(_logicalOffset + _visualDelta, 0, ScrollableHeight);
+#else
+        double finalOffset = MathExtension.Clamp(_logicalOffset + _visualDelta, 0, ScrollableHeight);
+#endif
         ScrollToVerticalOffset(finalOffset);
 
         // Clear visual delta and reset transform
@@ -138,7 +142,7 @@ public class SmoothScrollViewer : ScrollViewer
         }
     }
 
-    #endregion
+#endregion
 
     #region Helpers
 
@@ -153,14 +157,6 @@ public class SmoothScrollViewer : ScrollViewer
         _lastScrollDelta = e.Delta;
         _lastScrollingTick = e.Timestamp;
         return isTouchpadScrolling;
-    }
-
-    //For .net 4.5 compatibility
-    private static double Clamp(double value, double min, double max)
-    {
-        if (value < min) return min;
-        if (value > max) return max;
-        return value;
     }
 
     #endregion

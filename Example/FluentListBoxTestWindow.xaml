@@ -35,6 +35,10 @@
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 SnapsToDevicePixels="true">
                             <fluent:SmoothScrollViewer Padding="{TemplateBinding Padding}" Focusable="false">
+                                <fluent:SmoothScrollViewer.Physics>
+                                    <fluent:DefaultScrollPhysics Friction="0.9"
+                                                                 VelocityFactor="1.6" />
+                                </fluent:SmoothScrollViewer.Physics>
                                 <ItemsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                             </fluent:SmoothScrollViewer>
                         </Border>
@@ -64,7 +68,23 @@
                  VirtualizingPanel.IsVirtualizing="True"
                  VirtualizingPanel.IsVirtualizingWhenGrouping="True"
                  VirtualizingPanel.ScrollUnit="Pixel"
-                 VirtualizingPanel.VirtualizationMode="Recycling" />
+                 VirtualizingPanel.VirtualizationMode="Recycling">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="4">
+                        <Border Width="120"
+                                Height="90"
+                                Padding="2"
+                                Background="#992C70DD"
+                                CornerRadius="6" />
+                        <TextBlock Margin="4,120,4,0"
+                                   FontSize="10"
+                                   Text="{Binding}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
 
     </Grid>
 </Window>
