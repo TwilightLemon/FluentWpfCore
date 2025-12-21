@@ -1,29 +1,46 @@
-using FluentWpfCore.Helpers;
+ï»¿using FluentWpfCore.Helpers;
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace FluentWpfCore.ScrollPhysics;
 
 public class DefaultScrollPhysics : IScrollPhysics
 {
     /// <summary>
-    /// »º¶¯Ä£ĞÍµÄµş¼ÓËÙ¶ÈÁ¦¶È£¬ÊıÖµÔ½´ó£¬¹ö¶¯ÆğÊ¼ËÙÂÊÔ½¿ì£¬¹öµÃÔ½Ô¶
+    /// ç¼“åŠ¨æ¨¡å‹çš„å åŠ é€Ÿåº¦åŠ›åº¦ï¼Œæ•°å€¼è¶Šå¤§ï¼Œæ»šåŠ¨èµ·å§‹é€Ÿç‡è¶Šå¿«ï¼Œæ»šå¾—è¶Šè¿œ
     /// </summary>
     [Category("Scroll Physics")]
-    [Description("»º¶¯Ä£ĞÍµÄµş¼ÓËÙ¶ÈÁ¦¶È£¬ÊıÖµÔ½´ó£¬¹ö¶¯ÆğÊ¼ËÙÂÊÔ½¿ì£¬¹öµÃÔ½Ô¶¡£È¡Öµ1~10")]
-    public double VelocityFactor { get; set; } = 1.65;
+    [Description("ç¼“åŠ¨æ¨¡å‹çš„å åŠ é€Ÿåº¦åŠ›åº¦ï¼Œæ•°å€¼è¶Šå¤§ï¼Œæ»šåŠ¨èµ·å§‹é€Ÿç‡è¶Šå¿«ï¼Œæ»šå¾—è¶Šè¿œã€‚å–å€¼1~5")]
+    [Obsolete("è¯¥å‚æ•°ä¸å†æœ‰æ•ˆï¼Œå¦‚éœ€ä¿®æ”¹èµ·å§‹é€Ÿç‡å€é€Ÿå› å­è¯·ä½¿ç”¨MinVelocityFactor")]
+    public double VelocityFactor { get; set; } = 1.5;
+
+    private double _minVelocityFactor = 1.2, _compleValue = 1.3;
+    private const double MaxVelocityFactor = 2.5;
+
+    [Category("Scroll Physics")]
+    [Description("ç¼“åŠ¨æ¨¡å‹çš„èµ·å§‹åŠ›åº¦ï¼Œæ•°å€¼è¶Šå¤§ï¼Œæ»šåŠ¨èµ·å§‹é€Ÿç‡è¶Šå¿«ï¼Œæ»šå¾—è¶Šè¿œã€‚ä¸€èˆ¬å–å€¼1~2")]
+    public double MinVelocityFactor
+    {
+        get => _minVelocityFactor;
+        set
+        {
+            _minVelocityFactor = value;
+            _compleValue = MaxVelocityFactor - value;
+        }
+    }
 
     /// <summary>
-    /// »º¶¯Ä£ĞÍµÄËÙ¶ÈË¥¼õÏµÊı£¬ÊıÖµÔ½Ğ¡£¬Ô½¿ìÍ£ÏÂÀ´
+    /// ç¼“åŠ¨æ¨¡å‹çš„é€Ÿåº¦è¡°å‡ç³»æ•°ï¼Œæ•°å€¼è¶Šå°ï¼Œè¶Šå¿«åœä¸‹æ¥
     /// </summary>
     [Category("Scroll Physics")]
-    [Description("»º¶¯Ä£ĞÍµÄËÙ¶ÈË¥¼õÏµÊı£¬ÊıÖµÔ½Ğ¡£¬Ô½¿ìÍ£ÏÂÀ´¡£È¡Öµ0~1")]
+    [Description("ç¼“åŠ¨æ¨¡å‹çš„é€Ÿåº¦è¡°å‡ç³»æ•°ï¼Œæ•°å€¼è¶Šå°ï¼Œè¶Šå¿«åœä¸‹æ¥ã€‚å–å€¼0~1")]
     public double Friction { get; set; } = 0.92;
 
     /// <summary>
-    /// ¾«È·Ä£ĞÍµÄ²åÖµÏµÊı£¬ÊıÖµÔ½´ó£¬¹ö¶¯Ô½¿ì½Ó½üÄ¿±ê
+    /// ç²¾ç¡®æ¨¡å‹çš„æ’å€¼ç³»æ•°ï¼Œæ•°å€¼è¶Šå¤§ï¼Œæ»šåŠ¨è¶Šå¿«æ¥è¿‘ç›®æ ‡
     /// </summary>
     [Category("Scroll Physics")]
-    [Description("¾«È·Ä£ĞÍµÄ²åÖµÏµÊı£¬ÊıÖµÔ½´ó£¬¹ö¶¯Ô½¿ì½Ó½üÄ¿±ê¡£È¡Öµ0~1")]
+    [Description("ç²¾ç¡®æ¨¡å‹çš„æ’å€¼ç³»æ•°ï¼Œæ•°å€¼è¶Šå¤§ï¼Œæ»šåŠ¨è¶Šå¿«æ¥è¿‘ç›®æ ‡ã€‚å–å€¼0~1")]
     public double LerpFactor { get; set; } = 0.5;
 
     private const double TargetFrameTime = 1.0 / 144.0;
@@ -35,11 +52,10 @@ public class DefaultScrollPhysics : IScrollPhysics
 
     public bool IsStable => _isStable;
 
-    public void OnScroll(double currentOffset, double delta, bool isPrecision, double minOffset, double maxOffset)
+    public void OnScroll(double currentOffset, double delta, bool isPrecision, double minOffset, double maxOffset, int timeIntervalMs)
     {
         _isPrecision = isPrecision;
         _isStable = false;
-
         if (isPrecision)
         {
             _velocity = 0;
@@ -51,8 +67,16 @@ public class DefaultScrollPhysics : IScrollPhysics
         }
         else
         {
-            _velocity += -delta * VelocityFactor;
+            double vf = GetVelocityFactor(timeIntervalMs);
+            Debug.WriteLine(vf);
+            _velocity += -delta * vf;
         }
+    }
+
+    private double GetVelocityFactor(int ms)
+    {
+        //v=(5- minVelocityFactor)e^(âˆ’(ms/20) )+minVelocityFactor
+        return _compleValue* Math.Exp(-(ms / 20.0)) + _minVelocityFactor;
     }
 
     public double Update(double currentOffset, double dt, double minOffset, double maxOffset)
@@ -75,7 +99,7 @@ public class DefaultScrollPhysics : IScrollPhysics
         }
         else
         {
-            if (Math.Abs(_velocity) < 6)
+            if (Math.Abs(_velocity) < 2)
             {
                 _velocity = 0;
                 _isStable = true;

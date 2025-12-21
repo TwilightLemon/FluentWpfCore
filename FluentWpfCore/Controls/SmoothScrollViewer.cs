@@ -1,7 +1,6 @@
 ﻿using FluentWpfCore.Helpers;
 using FluentWpfCore.ScrollPhysics;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -75,8 +74,8 @@ public class SmoothScrollViewer : ScrollViewer
             _visualDelta = 0;
         }
 
-        bool isPrecision = IsTouchpadScroll(e);
-        Physics.OnScroll(_currentVisualOffset, e.Delta, isPrecision, 0, ScrollableHeight);
+        bool isPrecision = IsTouchpadScroll(e,out int intervalMs);
+        Physics.OnScroll(_currentVisualOffset, e.Delta, isPrecision, 0, ScrollableHeight, intervalMs);
 
         StartRendering();
     }
@@ -155,7 +154,6 @@ public class SmoothScrollViewer : ScrollViewer
             return;
         }
 
-        // Update ScrollBar thumb
         _scrollBarUpdateAccumulator += dt;
         if (_scrollBarUpdateAccumulator >= ScrollBarUpdateInterval)
         {
@@ -174,12 +172,12 @@ public class SmoothScrollViewer : ScrollViewer
 
     #region Helpers
 
-    private bool IsTouchpadScroll(MouseWheelEventArgs e)
+    private bool IsTouchpadScroll(MouseWheelEventArgs e,out int intervalMs)
     {
-        var tickCount = Environment.TickCount;
+        intervalMs = Environment.TickCount - _lastScrollingTick;
         var isTouchpadScrolling =
             e.Delta % Mouse.MouseWheelDeltaForOneLine != 0 ||
-            (tickCount - _lastScrollingTick < 100 &&
+            (intervalMs < 100 &&
              _lastScrollDelta % Mouse.MouseWheelDeltaForOneLine != 0);
 
         _lastScrollDelta = e.Delta;
