@@ -1,6 +1,7 @@
 ﻿using FluentWpfCore.Helpers;
 using FluentWpfCore.ScrollPhysics;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,6 +13,7 @@ public class SmoothScrollViewer : ScrollViewer
     private const double ScrollBarUpdateInterval = 1.0 / 24.0; // 24Hz for ScrollBar updates
 
     private double _logicalOffset;   // The actual ScrollViewer offset
+    private double _currentVisualOffset; // The target visual offset (smooth)
     private double _visualDelta;     // Visual offset delta from logical offset
 
     private long _lastTimestamp;
@@ -19,6 +21,7 @@ public class SmoothScrollViewer : ScrollViewer
     private bool _isRendering;
 
     private TranslateTransform? _transform;
+    private UIElement? _content;
 
     private int _lastScrollDelta;
     private int _lastScrollingTick;
@@ -40,9 +43,14 @@ public class SmoothScrollViewer : ScrollViewer
     {
         if (Content is UIElement element)
         {
+            _content = element;
             _transform = new TranslateTransform();
             element.RenderTransform = _transform;
             element.RenderTransformOrigin = new Point(0, 0);
+        }
+        else
+        {
+            throw new NotImplementedException("SmoothScrollViewer.Content is not a UIElement");
         }
     }
 
@@ -63,13 +71,36 @@ public class SmoothScrollViewer : ScrollViewer
         if (!_isRendering)
         {
             _logicalOffset = VerticalOffset;
+            _currentVisualOffset = _logicalOffset;
             _visualDelta = 0;
         }
 
         bool isPrecision = IsTouchpadScroll(e);
-        Physics.OnScroll(_logicalOffset + _visualDelta, e.Delta, isPrecision, 0, ScrollableHeight);
+        Physics.OnScroll(_currentVisualOffset, e.Delta, isPrecision, 0, ScrollableHeight);
 
         StartRendering();
+    }
+
+    protected override void OnScrollChanged(ScrollChangedEventArgs e)
+    {
+        base.OnScrollChanged(e);
+        
+        if (e.VerticalChange == 0) return;
+
+        _logicalOffset = e.VerticalOffset;
+
+        if (_isRendering)
+        {
+            // Maintain visual position by adjusting transform
+            _visualDelta = _currentVisualOffset - _logicalOffset;
+            _transform!.Y = -_visualDelta;
+        }
+        else
+        {
+            // If not rendering (e.g. scrollbar drag), reset transform
+            _visualDelta = 0;
+            _transform!.Y = 0;
+        }
     }
 
     #endregion
@@ -84,6 +115,8 @@ public class SmoothScrollViewer : ScrollViewer
         _scrollBarUpdateAccumulator = 0;
         CompositionTarget.Rendering += OnRendering;
         _isRendering = true;
+        if (_content != null)
+            _content.IsHitTestVisible = false;
     }
 
     private void StopRendering()
@@ -95,16 +128,17 @@ public class SmoothScrollViewer : ScrollViewer
 
         // Final settlement: sync logical offset
 #if NET5_0_OR_GREATER
-        double finalOffset = Math.Clamp(_logicalOffset + _visualDelta, 0, ScrollableHeight);
+        double finalOffset = Math.Clamp(_currentVisualOffset, 0, ScrollableHeight);
 #else
-        double finalOffset = MathExtension.Clamp(_logicalOffset + _visualDelta, 0, ScrollableHeight);
+        double finalOffset = MathExtension.Clamp(_currentVisualOffset, 0, ScrollableHeight);
 #endif
         ScrollToVerticalOffset(finalOffset);
 
         // Clear visual delta and reset transform
         _visualDelta = 0;
         _logicalOffset = finalOffset;
-        _transform?.Y = 0;
+        _transform!.Y = 0;
+        _content!.IsHitTestVisible = true;
     }
 
     private void OnRendering(object? sender, EventArgs e)
@@ -113,33 +147,27 @@ public class SmoothScrollViewer : ScrollViewer
         double dt = (double)(now - _lastTimestamp) / Stopwatch.Frequency;
         _lastTimestamp = now;
 
-        double currentVisualOffset = _logicalOffset + _visualDelta;
-        double newVisualOffset = Physics.Update(currentVisualOffset, dt, 0, ScrollableHeight);
+        _currentVisualOffset = Physics.Update(_currentVisualOffset, dt, 0, ScrollableHeight);
 
         if (Physics.IsStable)
         {
-            _visualDelta = newVisualOffset - _logicalOffset;
             StopRendering();
             return;
         }
 
-        // Update ScrollBar thumb at 24Hz (without triggering layout)
+        // Update ScrollBar thumb
         _scrollBarUpdateAccumulator += dt;
         if (_scrollBarUpdateAccumulator >= ScrollBarUpdateInterval)
         {
             _scrollBarUpdateAccumulator = 0;
-            
-            // Sync logical offset to trigger virtualization
-            ScrollToVerticalOffset(newVisualOffset);
-            _logicalOffset = newVisualOffset;
-            _visualDelta = 0;
-            _transform?.Y = 0;
+
+            // Sync logical offset to trigger layout update (allowing virtualization)
+            ScrollToVerticalOffset(_currentVisualOffset);
         }
-        else
-        {
-            _visualDelta = newVisualOffset - _logicalOffset;
-            _transform?.Y = -_visualDelta;
-        }
+        
+        // Always update transform to match current visual offset relative to actual logical offset
+        _visualDelta = _currentVisualOffset - _logicalOffset;
+        _transform!.Y = -_visualDelta;
     }
 
 #endregion

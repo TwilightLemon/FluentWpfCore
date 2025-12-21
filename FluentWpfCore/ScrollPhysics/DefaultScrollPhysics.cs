@@ -9,21 +9,21 @@ public class DefaultScrollPhysics : IScrollPhysics
     /// 缓动模型的叠加速度力度，数值越大，滚动起始速率越快，滚得越远
     /// </summary>
     [Category("Scroll Physics")]
-    [Description("控制非精确滚动时叠加的初速度，数值越大滚动越远。取值1~10")]
-    public double VelocityFactor { get; set; } = 2.0;
+    [Description("缓动模型的叠加速度力度，数值越大，滚动起始速率越快，滚得越远。取值1~10")]
+    public double VelocityFactor { get; set; } = 1.65;
 
     /// <summary>
     /// 缓动模型的速度衰减系数，数值越小，越快停下来
     /// </summary>
     [Category("Scroll Physics")]
-    [Description("控制非精确滚动的速度衰减，数值越小减速越快。取值0~1")]
+    [Description("缓动模型的速度衰减系数，数值越小，越快停下来。取值0~1")]
     public double Friction { get; set; } = 0.92;
 
     /// <summary>
     /// 精确模型的插值系数，数值越大，滚动越快接近目标
     /// </summary>
     [Category("Scroll Physics")]
-    [Description("控制精确滚动时接近目标的速度，数值越大越快。取值0~1")]
+    [Description("精确模型的插值系数，数值越大，滚动越快接近目标。取值0~1")]
     public double LerpFactor { get; set; } = 0.5;
 
     private const double TargetFrameTime = 1.0 / 144.0;
@@ -75,7 +75,7 @@ public class DefaultScrollPhysics : IScrollPhysics
         }
         else
         {
-            if (Math.Abs(_velocity) < 0.1)
+            if (Math.Abs(_velocity) < 6)
             {
                 _velocity = 0;
                 _isStable = true;
