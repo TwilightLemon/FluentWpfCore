@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 namespace FluentWpfCore.Controls;
+
 public class SmoothScrollViewer : ScrollViewer
 {
     private const double ScrollBarUpdateInterval = 1.0 / 24.0; // 24Hz for ScrollBar updates
@@ -74,7 +75,7 @@ public class SmoothScrollViewer : ScrollViewer
             _visualDelta = 0;
         }
 
-        bool isPrecision = IsTouchpadScroll(e,out int intervalMs);
+        bool isPrecision = IsTouchpadScroll(e, out int intervalMs);
         Physics.OnScroll(_currentVisualOffset, e.Delta, isPrecision, 0, ScrollableHeight, intervalMs);
 
         StartRendering();
@@ -83,7 +84,7 @@ public class SmoothScrollViewer : ScrollViewer
     protected override void OnScrollChanged(ScrollChangedEventArgs e)
     {
         base.OnScrollChanged(e);
-        
+
         if (e.VerticalChange == 0) return;
 
         _logicalOffset = e.VerticalOffset;
@@ -114,8 +115,7 @@ public class SmoothScrollViewer : ScrollViewer
         _scrollBarUpdateAccumulator = 0;
         CompositionTarget.Rendering += OnRendering;
         _isRendering = true;
-        if (_content != null)
-            _content.IsHitTestVisible = false;
+        _content!.IsHitTestVisible = false;
     }
 
     private void StopRendering()
@@ -162,17 +162,17 @@ public class SmoothScrollViewer : ScrollViewer
             // Sync logical offset to trigger layout update (allowing virtualization)
             ScrollToVerticalOffset(_currentVisualOffset);
         }
-        
+
         // Always update transform to match current visual offset relative to actual logical offset
         _visualDelta = _currentVisualOffset - _logicalOffset;
         _transform!.Y = -_visualDelta;
     }
 
-#endregion
+    #endregion
 
     #region Helpers
 
-    private bool IsTouchpadScroll(MouseWheelEventArgs e,out int intervalMs)
+    private bool IsTouchpadScroll(MouseWheelEventArgs e, out int intervalMs)
     {
         intervalMs = Environment.TickCount - _lastScrollingTick;
         var isTouchpadScrolling =

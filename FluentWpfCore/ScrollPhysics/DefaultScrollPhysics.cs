@@ -1,6 +1,5 @@
 ﻿using FluentWpfCore.Helpers;
 using System.ComponentModel;
-using System.Diagnostics;
 
 namespace FluentWpfCore.ScrollPhysics;
 
@@ -14,7 +13,7 @@ public class DefaultScrollPhysics : IScrollPhysics
     [Obsolete("该参数不再有效，如需修改起始速率倍速因子请使用MinVelocityFactor")]
     public double VelocityFactor { get; set; } = 1.5;
 
-    private double _minVelocityFactor = 1.2, _compleValue = 1.3;
+    private double _minVelocityFactor = 1.2, _complementValue = 1.3;
     private const double MaxVelocityFactor = 2.5;
 
     [Category("Scroll Physics")]
@@ -25,7 +24,7 @@ public class DefaultScrollPhysics : IScrollPhysics
         set
         {
             _minVelocityFactor = value;
-            _compleValue = MaxVelocityFactor - value;
+            _complementValue = MaxVelocityFactor - value;
         }
     }
 
@@ -68,7 +67,6 @@ public class DefaultScrollPhysics : IScrollPhysics
         else
         {
             double vf = GetVelocityFactor(timeIntervalMs);
-            Debug.WriteLine(vf);
             _velocity += -delta * vf;
         }
     }
@@ -76,7 +74,7 @@ public class DefaultScrollPhysics : IScrollPhysics
     private double GetVelocityFactor(int ms)
     {
         //v=(5- minVelocityFactor)e^(−(ms/20) )+minVelocityFactor
-        return _compleValue* Math.Exp(-(ms / 20.0)) + _minVelocityFactor;
+        return _complementValue * Math.Exp(-(ms / 20.0)) + _minVelocityFactor;
     }
 
     public double Update(double currentOffset, double dt, double minOffset, double maxOffset)
