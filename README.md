@@ -265,7 +265,7 @@ If you need non-solid backgrounds, keep the popup background transparent and pro
 
 ### SmoothScrollViewer
 
-Provides a smooth scrolling experience (currently vertical only):
+Provides a smooth scrolling experience with customizable physics models and support for mouse wheel, touchpad, touch and pen input:
 
 ```xml
 <fluent:SmoothScrollViewer>
@@ -274,6 +274,143 @@ Provides a smooth scrolling experience (currently vertical only):
     </StackPanel>
 </fluent:SmoothScrollViewer>
 ```
+
+#### Properties
+
+| Property | Type | Default | Description |
+|------|------|---------|------|
+| `IsEnableSmoothScrolling` | `bool` | `true` | Enable or disable smooth scrolling animation |
+| `PreferredScrollOrientation` | `Orientation` | `Vertical` | Preferred scroll direction: `Vertical` or `Horizontal` |
+| `AllowTogglePreferredScrollOrientationByShiftKey` | `bool` | `true` | Allow toggling scroll orientation by holding Shift key |
+| `Physics` | `IScrollPhysics` | `DefaultScrollPhysics` | Scrolling physics model that controls animation behavior |
+
+#### Scroll Physics Model
+
+`SmoothScrollViewer` uses a pluggable physics model through the `IScrollPhysics` interface, allowing you to customize scrolling behavior. The default implementation is `DefaultScrollPhysics`, which provides two distinct modes:
+
+##### Precision Mode (Touchpad)
+For touchpad/touch input, uses smooth interpolation to follow the target offset:
+- **LerpFactor** (`double`, default: `0.5`, range: `0~1`) — Interpolation coefficient; higher values make scrolling reach the target faster
+
+##### Momentum Mode (Mouse Wheel)
+For mouse wheel input, uses velocity-based physics with friction:
+- **MinVelocityFactor** (`double`, default: `1.2`, range: `1~2`) — Initial velocity multiplier; higher values result in faster initial speed and longer scroll distance
+- **Friction** (`double`, default: `0.92`, range: `0~1`) — Velocity decay coefficient; lower values make scrolling stop faster
+
+The physics model automatically detects input type and switches between modes. Velocity factor dynamically adjusts based on scroll interval timing for optimal feel.
+
+#### Usage Examples
+
+##### Basic usage
+```xml
+<fluent:SmoothScrollViewer>
+    <StackPanel>
+        <TextBlock Text="Item 1" Height="100" />
+        <TextBlock Text="Item 2" Height="100" />
+        <TextBlock Text="Item 3" Height="100" />
+        <!-- more items -->
+    </StackPanel>
+</fluent:SmoothScrollViewer>
+```
+
+##### Customize scroll physics
+```xml
+<fluent:SmoothScrollViewer>
+    <fluent:SmoothScrollViewer.Physics>
+        <fluent:DefaultScrollPhysics MinVelocityFactor="1.5"
+                                     Friction="0.85"
+                                     LerpFactor="0.6" />
+    </fluent:SmoothScrollViewer.Physics>
+    <StackPanel>
+        <!-- content -->
+    </StackPanel>
+</fluent:SmoothScrollViewer>
+```
+
+##### Configure scroll orientation
+```xml
+<!-- Horizontal scrolling by default -->
+<fluent:SmoothScrollViewer PreferredScrollOrientation="Horizontal"
+                           HorizontalScrollBarVisibility="Auto"
+                           VerticalScrollBarVisibility="Disabled">
+    <StackPanel Orientation="Horizontal">
+        <!-- content -->
+    </StackPanel>
+</fluent:SmoothScrollViewer>
+```
+
+##### Toggle between vertical and horizontal with Shift key
+```xml
+<fluent:SmoothScrollViewer AllowTogglePreferredScrollOrientationByShiftKey="True"
+                           HorizontalScrollBarVisibility="Auto"
+                           VerticalScrollBarVisibility="Auto">
+    <!-- Hold Shift while scrolling to switch orientation -->
+    <Grid>
+        <!-- content -->
+    </Grid>
+</fluent:SmoothScrollViewer>
+```
+
+##### Temporarily disable smooth scrolling
+```xml
+<fluent:SmoothScrollViewer IsEnableSmoothScrolling="False">
+    <!-- Falls back to standard ScrollViewer behavior -->
+    <StackPanel>
+        <!-- content -->
+    </StackPanel>
+</fluent:SmoothScrollViewer>
+```
+
+##### Use with ItemsControl for large lists
+```xml
+<fluent:SmoothScrollViewer>
+    <ItemsControl ItemsSource="{Binding Items}">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <Border Height="50" Background="LightGray" Margin="5">
+                    <TextBlock Text="{Binding}" VerticalAlignment="Center" Margin="10" />
+                </Border>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</fluent:SmoothScrollViewer>
+```
+
+##### Custom physics implementation
+You can implement your own physics model by implementing the `IScrollPhysics` interface:
+
+```csharp
+public class CustomScrollPhysics : IScrollPhysics
+{
+    public bool IsStable { get; private set; }
+    
+    public void OnScroll(double currentOffset, double delta, bool isPrecision, 
+                         double minOffset, double maxOffset, int timeIntervalMs)
+    {
+        // Handle scroll input
+        IsStable = false;
+    }
+    
+    public double Update(double currentOffset, double dt, 
+                         double minOffset, double maxOffset)
+    {
+        // Calculate and return new offset
+        // Set IsStable = true when animation should stop
+        return newOffset;
+    }
+}
+```
+
+Then apply it to the SmoothScrollViewer:
+```csharp
+smoothScrollViewer.Physics = new CustomScrollPhysics();
+```
+
 
 ### Fluent-style Menu
 

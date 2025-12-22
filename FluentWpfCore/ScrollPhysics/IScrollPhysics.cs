@@ -1,4 +1,4 @@
-namespace FluentWpfCore.Helpers
+namespace FluentWpfCore.ScrollPhysics
 {
     public interface IScrollPhysics
     {
