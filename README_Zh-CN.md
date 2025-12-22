@@ -263,7 +263,7 @@ FluentPopup 是一个增强的弹出窗口控件。默认带有亚克力背景�
 
 ### SmoothScrollViewer
 
-提供平滑滚动体验的 ScrollViewer，目前只支持竖直方向滚动：
+提供平滑流畅的滚动体验，支持自定义物理模型，兼容鼠标滚轮、触控板：
 
 ```xml
 <fluent:SmoothScrollViewer>
@@ -273,6 +273,141 @@ FluentPopup 是一个增强的弹出窗口控件。默认带有亚克力背景�
 </fluent:SmoothScrollViewer>
 ```
 
+#### 属性说明
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|---------|------|
+| `IsEnableSmoothScrolling` | `bool` | `true` | 启用或禁用平滑滚动动画 |
+| `PreferredScrollOrientation` | `Orientation` | `Vertical` | 首选滚动方向：`Vertical`（竖直）或 `Horizontal`（水平） |
+| `AllowTogglePreferredScrollOrientationByShiftKey` | `bool` | `true` | 允许通过按住 Shift 键切换滚动方向 |
+| `Physics` | `IScrollPhysics` | `DefaultScrollPhysics` | 滚动物理模型，控制动画行为 |
+
+#### 滚动物理模型
+
+`SmoothScrollViewer` 通过 `IScrollPhysics` 接口使用可插拔的物理模型，允许你自定义滚动行为。默认实现是 `DefaultScrollPhysics`，它提供两种不同的模式：
+
+##### 精确模式（触控板）
+用于触控板/触摸输入，使用平滑插值来跟随目标偏移量：
+- **LerpFactor**（`double`，默认值：`0.5`，范围：`0~1`）— 插值系数；数值越大，滚动越快到达目标位置
+
+##### 惯性模式（鼠标滚轮）
+用于鼠标滚轮输入，使用基于速度的物理引擎并带有摩擦力：
+- **MinVelocityFactor**（`double`，默认值：`1.2`，范围：`1~2`）— 起始速度倍数；数值越大，起始速度越快，滚动距离越长
+- **Friction**（`double`，默认值：`0.92`，范围：`0~1`）— 速度衰减系数；数值越小，越快停下来
+
+物理模型会自动检测输入类型并在两种模式之间切换。速度因子会根据滚动间隔时间动态调整，以获得最佳手感。
+
+#### 使用示例
+
+##### 基础使用
+```xml
+<fluent:SmoothScrollViewer>
+    <StackPanel>
+        <TextBlock Text="Item 1" Height="100" />
+        <TextBlock Text="Item 2" Height="100" />
+        <TextBlock Text="Item 3" Height="100" />
+        <!-- 更多项目 -->
+    </StackPanel>
+</fluent:SmoothScrollViewer>
+```
+
+##### 自定义滚动物理参数
+```xml
+<fluent:SmoothScrollViewer>
+    <fluent:SmoothScrollViewer.Physics>
+        <fluent:DefaultScrollPhysics MinVelocityFactor="1.5"
+                                     Friction="0.85"
+                                     LerpFactor="0.6" />
+    </fluent:SmoothScrollViewer.Physics>
+    <StackPanel>
+        <!-- 内容 -->
+    </StackPanel>
+</fluent:SmoothScrollViewer>
+```
+
+##### 配置滚动方向
+```xml
+<!-- 默认水平滚动 -->
+<fluent:SmoothScrollViewer PreferredScrollOrientation="Horizontal"
+                           HorizontalScrollBarVisibility="Auto"
+                           VerticalScrollBarVisibility="Disabled">
+    <StackPanel Orientation="Horizontal">
+        <!-- 内容 -->
+    </StackPanel>
+</fluent:SmoothScrollViewer>
+```
+
+##### 使用 Shift 键在竖直和水平方向之间切换
+```xml
+<fluent:SmoothScrollViewer AllowTogglePreferredScrollOrientationByShiftKey="True"
+                           HorizontalScrollBarVisibility="Auto"
+                           VerticalScrollBarVisibility="Auto">
+    <!-- 滚动时按住 Shift 键可切换方向 -->
+    <Grid>
+        <!-- 内容 -->
+    </Grid>
+</fluent:SmoothScrollViewer>
+```
+
+##### 临时禁用平滑滚动
+```xml
+<fluent:SmoothScrollViewer IsEnableSmoothScrolling="False">
+    <!-- 回退到标准 ScrollViewer 行为 -->
+    <StackPanel>
+        <!-- 内容 -->
+    </StackPanel>
+</fluent:SmoothScrollViewer>
+```
+
+##### 与 ItemsControl 配合用于大列表
+```xml
+<fluent:SmoothScrollViewer>
+    <ItemsControl ItemsSource="{Binding Items}">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <Border Height="50" Background="LightGray" Margin="5">
+                    <TextBlock Text="{Binding}" VerticalAlignment="Center" Margin="10" />
+                </Border>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</fluent:SmoothScrollViewer>
+```
+
+##### 自定义物理实现
+你可以通过实现 `IScrollPhysics` 接口来创建自己的物理模型：
+
+```csharp
+public class CustomScrollPhysics : IScrollPhysics
+{
+    public bool IsStable { get; private set; }
+    
+    public void OnScroll(double currentOffset, double delta, bool isPrecision, 
+                         double minOffset, double maxOffset, int timeIntervalMs)
+    {
+        // 处理滚动输入
+        IsStable = false;
+    }
+    
+    public double Update(double currentOffset, double dt, 
+                         double minOffset, double maxOffset)
+    {
+        // 计算并返回新的偏移量
+        // 当动画应该停止时设置 IsStable = true
+        return newOffset;
+    }
+}
+```
+
+然后将其应用到 SmoothScrollViewer：
+```csharp
+smoothScrollViewer.Physics = new CustomScrollPhysics();
+```
 ### Fluent 风格的 Menu
 这部分内容涉及自定义控件模板和样式，所以需要先引入资源：
 
