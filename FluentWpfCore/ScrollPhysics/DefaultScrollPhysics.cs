@@ -9,7 +9,7 @@ public class DefaultScrollPhysics : IScrollPhysics
     /// 缓动模型的叠加速度力度，数值越大，滚动起始速率越快，滚得越远
     /// </summary>
     [Category("Scroll Physics")]
-    [Description("缓动模型的叠加速度力度，数值越大，滚动起始速率越快，滚得越远。取值1~5")]
+    [Description("[已弃用] 缓动模型的叠加速度力度，数值越大，滚动起始速率越快，滚得越远。取值1~5")]
     [Obsolete("该参数不再有效，如需修改起始速率倍速因子请使用MinVelocityFactor")]
     public double VelocityFactor { get; set; } = 1.5;
 
@@ -73,7 +73,7 @@ public class DefaultScrollPhysics : IScrollPhysics
 
     private double GetVelocityFactor(int ms)
     {
-        //v=(5- minVelocityFactor)e^(−(ms/20) )+minVelocityFactor
+        // vf = (MaxVelocityFactor - minVelocityFactor) * e^(−(ms / 20)) + minVelocityFactor
         return _complementValue * Math.Exp(-(ms / 20.0)) + _minVelocityFactor;
     }
 

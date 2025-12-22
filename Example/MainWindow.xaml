@@ -53,8 +53,10 @@
                 </MenuItem>
             </MenuItem>
 
-            <MenuItem Header="_Check me"  IsCheckable="True" IsChecked="True"/>
-            <MenuItem Header="_Help"  Icon="🐱"/>
+            <MenuItem Header="_Check me"
+                      IsCheckable="True"
+                      IsChecked="True" />
+            <MenuItem Header="_Help" Icon="🐱" />
         </Menu>
         <TextBox Width="220"
                  Height="22"
@@ -122,8 +124,12 @@
                    ToolTip="This is a FluentWpfCore ToolTip!" />
         <fluent:SmoothScrollViewer x:Name="scrollViewer"
                                    Grid.Column="1"
-                                   Margin="0,36,0,0">
-            <StackPanel x:Name="panel" Orientation="Vertical" />
+                                   Margin="0,36,0,0"
+                                   HorizontalScrollBarVisibility="Auto"
+                                   IsEnableSmoothScrolling="False">
+            <StackPanel x:Name="panel"
+                        Width="800"
+                        Orientation="Vertical" />
         </fluent:SmoothScrollViewer>
     </Grid>
 </Window>
