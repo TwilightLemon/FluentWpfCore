@@ -12,7 +12,7 @@ namespace FluentWpfCore.Controls;
 /// <inheritdoc/>
 public class SmoothScrollViewer : ScrollViewer
 {
-    private const double ScrollBarUpdateInterval = 1.0 / 24.0; // 24Hz for ScrollBar updates
+    private const double LogicalOffsetUpdateInterval = 1.0 / 24.0; // 24Hz for ScrollBar updates
 
     private double _logicalOffsetVertical;   // The actual ScrollViewer vertical offset
     private double _currentVisualOffsetVertical; // The target visual vertical offset (smooth)
@@ -23,14 +23,11 @@ public class SmoothScrollViewer : ScrollViewer
     private double _visualDeltaHorizontal;     // Visual horizontal offset delta from logical offset
 
     private long _lastTimestamp;
-    private double _scrollBarUpdateAccumulator;
+    private double _logicalOffsetUpdateAccumulator;
     private bool _isRendering;
 
     private TranslateTransform? _transform;
     private UIElement? _content;
-
-    private int _lastScrollDelta;
-    private int _lastScrollingTick;
     
     private Orientation _activeScrollOrientation = Orientation.Vertical;
 
@@ -102,17 +99,16 @@ public class SmoothScrollViewer : ScrollViewer
             _activeScrollOrientation = effectiveOrientation;
         }
 
-        bool isPrecision = IsTouchpadScroll(e, out int intervalMs);
 
         if (effectiveOrientation == Orientation.Vertical && CanScrollVertical)
         {
             _activeScrollOrientation = Orientation.Vertical;
-            Physics.OnScroll(_currentVisualOffsetVertical, e.Delta, isPrecision, 0, ScrollableHeight, intervalMs);
+            Physics.OnScroll(e.Delta);
         }
         else if (effectiveOrientation == Orientation.Horizontal && CanScrollHorizontal)
         {
             _activeScrollOrientation = Orientation.Horizontal;
-            Physics.OnScroll(_currentVisualOffsetHorizontal, e.Delta, isPrecision, 0, ScrollableWidth, intervalMs);
+            Physics.OnScroll(e.Delta);
         }
 
         StartRendering();
@@ -180,7 +176,7 @@ public class SmoothScrollViewer : ScrollViewer
         if (_isRendering) return;
 
         _lastTimestamp = Stopwatch.GetTimestamp();
-        _scrollBarUpdateAccumulator = 0;
+        _logicalOffsetUpdateAccumulator = 0;
         CompositionTarget.Rendering += OnRendering;
         _isRendering = true;
         _content!.IsHitTestVisible = false;
@@ -230,11 +226,11 @@ public class SmoothScrollViewer : ScrollViewer
 
         if (_activeScrollOrientation == Orientation.Vertical)
         {
-            _currentVisualOffsetVertical = Physics.Update(_currentVisualOffsetVertical, dt, 0, ScrollableHeight);
+            _currentVisualOffsetVertical = MathExtension.Clamp(Physics.Update(_currentVisualOffsetVertical, dt), 0, ScrollableHeight);
         }
         else
         {
-            _currentVisualOffsetHorizontal = Physics.Update(_currentVisualOffsetHorizontal, dt, 0, ScrollableWidth);
+            _currentVisualOffsetHorizontal = MathExtension.Clamp(Physics.Update(_currentVisualOffsetHorizontal, dt), 0, ScrollableWidth);
         }
 
         if (Physics.IsStable)
@@ -243,10 +239,10 @@ public class SmoothScrollViewer : ScrollViewer
             return;
         }
 
-        _scrollBarUpdateAccumulator += dt;
-        if (_scrollBarUpdateAccumulator >= ScrollBarUpdateInterval)
+        _logicalOffsetUpdateAccumulator += dt;
+        if (_logicalOffsetUpdateAccumulator >= LogicalOffsetUpdateInterval)
         {
-            _scrollBarUpdateAccumulator = 0;
+            _logicalOffsetUpdateAccumulator = 0;
 
             // Sync logical offset to trigger layout update (allowing virtualization)
             if (_activeScrollOrientation == Orientation.Vertical)
@@ -275,19 +271,6 @@ public class SmoothScrollViewer : ScrollViewer
     #endregion
 
     #region Helpers
-
-    private bool IsTouchpadScroll(MouseWheelEventArgs e, out int intervalMs)
-    {
-        intervalMs = Environment.TickCount - _lastScrollingTick;
-        var isTouchpadScrolling =
-            e.Delta % Mouse.MouseWheelDeltaForOneLine != 0 ||
-            (intervalMs < 100 &&
-             _lastScrollDelta % Mouse.MouseWheelDeltaForOneLine != 0);
-
-        _lastScrollDelta = e.Delta;
-        _lastScrollingTick = e.Timestamp;
-        return isTouchpadScrolling;
-    }
 
     public bool CanScrollVertical
     {

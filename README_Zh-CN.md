@@ -9,7 +9,7 @@
 
 ## ✨ 特性
 
-### 🪟 窗口特效系统
+### 🪟 窓体特效系统
 - **多材质支持** - Acrylic、Mica、MicaAlt 等现代窗口材质
 - **灵活组合** - 材质效果 + 圆角 + 阴影 + DWM 动画自由组合
 - **跨版本兼容** - 支持 Windows 10 旧版 Composition API 和 Windows 11 System Backdrop API
@@ -284,18 +284,42 @@ FluentPopup 是一个增强的弹出窗口控件。默认带有亚克力背景�
 
 #### 滚动物理模型
 
-`SmoothScrollViewer` 通过 `IScrollPhysics` 接口使用可插拔的物理模型，允许你自定义滚动行为。默认实现是 `DefaultScrollPhysics`，它提供两种不同的模式：
+`SmoothScrollViewer` 通过 `IScrollPhysics` 接口使用可插拔的物理模型，允许你自定义滚动行为。内置提供两种实现：
 
-##### 精确模式（触控板）
-用于触控板/触摸输入，使用平滑插值来跟随目标偏移量：
-- **LerpFactor**（`double`，默认值：`0.5`，范围：`0~1`）— 插值系数；数值越大，滚动越快到达目标位置
+##### DefaultScrollPhysics（基于速度衰减）
 
-##### 惯性模式（鼠标滚轮）
-用于鼠标滚轮输入，使用基于速度的物理引擎并带有摩擦力：
-- **MinVelocityFactor**（`double`，默认值：`1.2`，范围：`1~2`）— 起始速度倍数；数值越大，起始速度越快，滚动距离越长
-- **Friction**（`double`，默认值：`0.92`，范围：`0~1`）— 速度衰减系数；数值越小，越快停下来
+使用速度衰减和摩擦力实现自然的惯性滚动效果。最终滚动距离等于输入的 delta 值。
 
-物理模型会自动检测输入类型并在两种模式之间切换。速度因子会根据滚动间隔时间动态调整，以获得最佳手感。
+| 属性 | 类型 | 默认值 | 范围 | 说明 |
+|------|------|--------|------|------|
+| `Smoothness` | `double` | `0.72` | `0~1` | 滚动平滑度；数值越大，滚动越平滑持久；数值越小，越快停下来 |
+
+```xml
+<fluent:SmoothScrollViewer>
+    <fluent:SmoothScrollViewer.Physics>
+        <fluent:DefaultScrollPhysics Smoothness="0.8" />
+    </fluent:SmoothScrollViewer.Physics>
+    <!-- 内容 -->
+</fluent:SmoothScrollViewer>
+```
+
+##### ExponentialScrollPhysics（指数缓动）
+
+使用指数衰减函数实现平滑滚动，具有"开始快、结束慢"的自然减速感。
+
+| 属性 | 类型 | 默认值 | 范围 | 说明 |
+|------|------|--------|------|------|
+| `DecayRate` | `double` | `8.0` | `1~20` | 衰减速率；数值越大，越快到达目标位置 |
+| `StopThreshold` | `double` | `0.5` | `0.1~5` | 停止阈值；剩余距离小于此值时停止滚动 |
+
+```xml
+<fluent:SmoothScrollViewer>
+    <fluent:SmoothScrollViewer.Physics>
+        <fluent:ExponentialScrollPhysics DecayRate="10" StopThreshold="0.5" />
+    </fluent:SmoothScrollViewer.Physics>
+    <!-- 内容 -->
+</fluent:SmoothScrollViewer>
+```
 
 #### 使用示例
 
@@ -307,20 +331,6 @@ FluentPopup 是一个增强的弹出窗口控件。默认带有亚克力背景�
         <TextBlock Text="Item 2" Height="100" />
         <TextBlock Text="Item 3" Height="100" />
         <!-- 更多项目 -->
-    </StackPanel>
-</fluent:SmoothScrollViewer>
-```
-
-##### 自定义滚动物理参数
-```xml
-<fluent:SmoothScrollViewer>
-    <fluent:SmoothScrollViewer.Physics>
-        <fluent:DefaultScrollPhysics MinVelocityFactor="1.5"
-                                     Friction="0.85"
-                                     LerpFactor="0.6" />
-    </fluent:SmoothScrollViewer.Physics>
-    <StackPanel>
-        <!-- 内容 -->
     </StackPanel>
 </fluent:SmoothScrollViewer>
 ```
@@ -387,158 +397,16 @@ public class CustomScrollPhysics : IScrollPhysics
 {
     public bool IsStable { get; private set; }
     
-    public void OnScroll(double currentOffset, double delta, bool isPrecision, 
-                         double minOffset, double maxOffset, int timeIntervalMs)
+    public void OnScroll(double delta)
     {
-        // 处理滚动输入
+        // 处理滚动输入，delta 为滚动量
         IsStable = false;
     }
     
-    public double Update(double currentOffset, double dt, 
-                         double minOffset, double maxOffset)
+    public double Update(double currentOffset, double dt)
     {
-        // 计算并返回新的偏移量
+        // 根据当前偏移量和时间增量计算并返回新的偏移量
         // 当动画应该停止时设置 IsStable = true
         return newOffset;
     }
 }
-```
-
-然后将其应用到 SmoothScrollViewer：
-```csharp
-smoothScrollViewer.Physics = new CustomScrollPhysics();
-```
-### Fluent 风格的 Menu
-这部分内容涉及自定义控件模板和样式，所以需要先引入资源：
-
-#### 1. 引入资源字典
-
-在 `App.xaml` 中引入 FluentWpfCore 的主题资源：
-
-```xml
-<Application.Resources>
-    <ResourceDictionary>
-        <ResourceDictionary.MergedDictionaries>
-            <!--引入 FluentWpfCore 默认主题-->
-            <ResourceDictionary Source="pack://application:,,,/FluentWpfCore;component/Themes/Generic.xaml" />
-        </ResourceDictionary.MergedDictionaries>
-        <SolidColorBrush x:Key="ForegroundColor" Color="#FF0E0E0E" />
-        
-        <!--可覆盖颜色值-->
-        <SolidColorBrush x:Key="AccentColor" Color="#FFFF8541" />
-    </ResourceDictionary>
-</Application.Resources>
-```
-
-| 可覆盖颜色值 | 说明 |
-|--------|------|
-| `AccentColor` | 强调色 |
-| `PopupBackgroundColor` | 弹出窗口背景色 |
-| `MaskColor` | 遮罩颜色，用于鼠标停留(Hover)时高亮 |
-
-#### 2. 应用全局样式（可选）
-
-```xml
-<!--ContextMenu 样式-->
-<Style BasedOn="{StaticResource FluentContextMenuStyle}" TargetType="{x:Type ContextMenu}">
-    <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
-</Style>
-
-<!--MenuItem 样式-->
-<Style BasedOn="{StaticResource FluentMenuItemStyle}" TargetType="MenuItem">
-    <Setter Property="Height" Value="36" />
-    <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
-    <Setter Property="VerticalContentAlignment" Value="Center" />
-</Style>
-
-<!--TextBox ContextMenu-->
-<Style TargetType="TextBox">
-    <Setter Property="ContextMenu" Value="{StaticResource FluentTextBoxContextMenu}" />
-</Style>
-
-<!--ToolTip 样式-->
-<Style TargetType="{x:Type ToolTip}">
-    <Setter Property="fluent:FluentStyle.UseFluentStyle" Value="True" />
-    <Setter Property="Background" Value="{DynamicResource PopupBackgroundColor}" />
-    <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
-</Style>
-```
-
-#### Menu
-```xml
-<Menu Background="Transparent"
-      Foreground="{DynamicResource ForegroundColor}"
-      WindowChrome.IsHitTestVisibleInChrome="True">
-    <MenuItem Header="_File">
-        <MenuItem Header="_New" />
-        <MenuItem Header="_Open" />
-        <MenuItem Header="_Recent Files">
-            <MenuItem Header="File1.txt" />
-        </MenuItem>
-    </MenuItem>
-    <MenuItem Header="_Help" />
-</Menu>
-```
-
-#### ContextMenu
-
-```xml
-<TextBlock Text="Right Click Me">
-    <TextBlock.ContextMenu>
-        <ContextMenu>
-            <MenuItem Header="Menu Item 1"
-                      Icon="📋"
-                      InputGestureText="Ctrl+C" />
-            <MenuItem Header="Menu Item 2">
-                <MenuItem Header="Child Item 1" />
-                <MenuItem Header="Child Item 2" />
-                <MenuItem Header="Child Item 3"
-                          IsCheckable="True"
-                          IsChecked="True" />
-            </MenuItem>
-            <MenuItem Header="Menu Item 3" />
-        </ContextMenu>
-    </TextBlock.ContextMenu>
-</TextBlock>
-```
-
-#### ToolTip
-
-```xml
-<TextBlock Text="Hover over me"
-           ToolTipService.ShowDuration="3000">
-    <TextBlock.ToolTip>
-        <ToolTip>
-            <TextBlock Text="This is a FluentWpfCore ToolTip!"/>
-        </ToolTip>
-    </TextBlock.ToolTip>
-</TextBlock>
-```
-Or simply:
-```xml
-<TextBlock Text="Hover over me"
-           ToolTip="This is a FluentWpfCore ToolTip!"/>
-```
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 📄 许可证
-
-本项目基于 [MIT](https://opensource.org/licenses/MIT) 许可证开源。
-
-## 🙏 致谢
-
-感谢所有为 FluentWpfCore 做出贡献的开发者！
-
-## 🧷相关教程
-
-- Fluent Window: [WPF 模拟UWP原生窗口样式——亚克力|云母材质、自定义标题栏样式、原生DWM动画 （附我封装好的类）](https://blog.twlmgatito.cn/posts/window-material-in-wpf/)
-- Fluent Popup & ToolTip: [WPF中为Popup和ToolTip使用WindowMaterial特效 win10/win11](https://blog.twlmgatito.cn/posts/wpf-use-windowmaterial-in-popup-and-tooltip/)
-- Fluent ScrollViewer: [WPF 使用CompositionTarget.Rendering实现平滑流畅滚动的ScrollViewer，支持滚轮、触控板、触摸屏和笔](https://blog.twlmgatito.cn/posts/wpf-fluent-scrollviewer-with-all-device-supported/)
-- Fluent Menu: [WPF 为ContextMenu使用Fluent风格的亚克力材质特效](https://blog.twlmgatito.cn/posts/wpf-fluent-contextmenu-with-arcrylic/)
-
----
-
-Made with ❤️ by [TwilightLemon](https://github.com/TwilightLemon)

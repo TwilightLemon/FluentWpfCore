@@ -127,6 +127,9 @@
                                    Margin="0,36,0,0"
                                    HorizontalScrollBarVisibility="Auto"
                                    IsEnableSmoothScrolling="True">
+            <fluent:SmoothScrollViewer.Physics>
+                <fluent:DefaultScrollPhysics />
+            </fluent:SmoothScrollViewer.Physics>
             <StackPanel x:Name="panel"
                         Width="800"
                         Orientation="Vertical" />

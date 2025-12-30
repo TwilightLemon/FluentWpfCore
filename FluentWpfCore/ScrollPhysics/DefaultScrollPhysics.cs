@@ -5,113 +5,81 @@ namespace FluentWpfCore.ScrollPhysics;
 
 public class DefaultScrollPhysics : IScrollPhysics
 {
+    // 摩擦系数的有效范围：0.85 ~ 0.96
+    // Smoothness 0 -> Friction 0.85 (快速停止)
+    // Smoothness 1 -> Friction 0.96 (平滑持久)
+    private const double MinFriction = 0.85;
+    private const double MaxFriction = 0.96;
+
+    private double _smoothness = 0.72;
+
     /// <summary>
-    /// 缓动模型的叠加速度力度，数值越大，滚动起始速率越快，滚得越远
+    /// 滚动平滑度，数值越大，滚动越平滑持久；数值越小，越快停下来
     /// </summary>
     [Category("Scroll Physics")]
-    [Description("[已弃用] 缓动模型的叠加速度力度，数值越大，滚动起始速率越快，滚得越远。取值1~5")]
-    [Obsolete("该参数不再有效，如需修改起始速率倍速因子请使用MinVelocityFactor")]
-    public double VelocityFactor { get; set; } = 1.5;
-
-    private double _minVelocityFactor = 1.2, _complementValue = 1.3;
-    private const double MaxVelocityFactor = 2.5;
-
-    [Category("Scroll Physics")]
-    [Description("缓动模型的起始力度，数值越大，滚动起始速率越快，滚得越远。一般取值1~2")]
-    public double MinVelocityFactor
+    [Description("滚动平滑度，数值越大，滚动越平滑持久；数值越小，越快停下来。取值0~1")]
+    public double Smoothness
     {
-        get => _minVelocityFactor;
+        get => _smoothness;
         set
         {
-            _minVelocityFactor = value;
-            _complementValue = MaxVelocityFactor - value;
+#if NET5_0_OR_GREATER
+            _smoothness = Math.Clamp(value, 0.0, 1.0);
+#else
+            _smoothness = MathExtension.Clamp(value, 0.0, 1.0);
+#endif
         }
     }
 
     /// <summary>
-    /// 缓动模型的速度衰减系数，数值越小，越快停下来
+    /// 根据 Smoothness 计算实际的摩擦系数
     /// </summary>
-    [Category("Scroll Physics")]
-    [Description("缓动模型的速度衰减系数，数值越小，越快停下来。取值0~1")]
-    public double Friction { get; set; } = 0.92;
+    private double Friction => MinFriction + _smoothness * (MaxFriction - MinFriction);
+
 
     /// <summary>
-    /// 精确模型的插值系数，数值越大，滚动越快接近目标
+    /// 参考帧时间（用于归一化计算，与实际显示器帧率无关）
+    /// 通过 timeFactor = dt / ReferenceFrameTime 实现帧率无关的物理模拟
     /// </summary>
-    [Category("Scroll Physics")]
-    [Description("精确模型的插值系数，数值越大，滚动越快接近目标。取值0~1")]
-    public double LerpFactor { get; set; } = 0.5;
-
-    private const double TargetFrameTime = 1.0 / 144.0;
+    private const double ReferenceFrameTime = 1.0 / 144.0;
 
     private double _velocity;
-    private double _targetOffset;
-    private bool _isPrecision;
     private bool _isStable = true;
 
     public bool IsStable => _isStable;
 
-    public void OnScroll(double currentOffset, double delta, bool isPrecision, double minOffset, double maxOffset, int timeIntervalMs)
+    public void OnScroll(double delta)
     {
-        _isPrecision = isPrecision;
         _isStable = false;
-        if (isPrecision)
-        {
-            _velocity = 0;
-#if NET5_0_OR_GREATER
-            _targetOffset = Math.Clamp(currentOffset - delta, minOffset, maxOffset);
-#else
-            _targetOffset = MathExtension.Clamp(currentOffset - delta, minOffset, maxOffset);
-#endif
-        }
-        else
-        {
-            double vf = GetVelocityFactor(timeIntervalMs);
-            _velocity += -delta * vf;
-        }
+        // 使用目标位移模式：将 delta 累加到目标位置
+        // 初始速度设为 -delta，配合位移系数 (1 - Friction)，保证总位移等于 delta
+        // 总位移 = v0 * k * (1 + f + f² + ...) = v0 * k / (1 - f)
+        // 当 k = (1 - f) 时，总位移 = v0 = -delta，即向上滚动 delta
+        _velocity -= delta;
     }
 
-    private double GetVelocityFactor(int ms)
-    {
-        // vf = (MaxVelocityFactor - minVelocityFactor) * e^(−(ms / 20)) + minVelocityFactor
-        return _complementValue * Math.Exp(-(ms / 20.0)) + _minVelocityFactor;
-    }
-
-    public double Update(double currentOffset, double dt, double minOffset, double maxOffset)
+    public double Update(double currentOffset, double dt)
     {
         if (_isStable) return currentOffset;
 
-        double timeFactor = dt / TargetFrameTime;
+        // 帧率无关的时间因子：无论实际帧率如何，物理效果保持一致
+        double timeFactor = dt / ReferenceFrameTime;
         double newOffset = currentOffset;
 
-        if (_isPrecision)
-        {
-            double lerp = 1.0 - Math.Pow(1.0 - LerpFactor, timeFactor);
-            newOffset = currentOffset + (_targetOffset - currentOffset) * lerp;
 
-            if (Math.Abs(_targetOffset - newOffset) < 0.5)
-            {
-                newOffset = _targetOffset;
-                _isStable = true;
-            }
+        if (Math.Abs(_velocity) < 0.5)
+        {
+            _velocity = 0;
+            _isStable = true;
         }
         else
         {
-            if (Math.Abs(_velocity) < 2)
-            {
-                _velocity = 0;
-                _isStable = true;
-            }
-            else
-            {
-                _velocity *= Math.Pow(Friction, timeFactor);
-                double delta = _velocity * (timeFactor / 24.0);
-#if NET5_0_OR_GREATER
-                newOffset = Math.Clamp(currentOffset + delta, minOffset, maxOffset);
-#else
-                newOffset = MathExtension.Clamp(currentOffset + delta, minOffset, maxOffset);
-#endif
-            }
+            // 位移系数 = (1 - Friction)，保证总位移等于初始速度
+            // 使用帧时间因子调整摩擦力和位移，实现帧率无关
+            double friction = Math.Pow(Friction, timeFactor);
+            double displacement = _velocity * (1 - friction);
+            _velocity *= friction;
+            newOffset = currentOffset + displacement;
         }
 
         return newOffset;
