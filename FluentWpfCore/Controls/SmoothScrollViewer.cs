@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace FluentWpfCore.Controls;
@@ -13,6 +15,7 @@ namespace FluentWpfCore.Controls;
 public class SmoothScrollViewer : ScrollViewer
 {
     private const double LogicalOffsetUpdateInterval = 1.0 / 24.0; // 24Hz for ScrollBar updates
+    private const int WM_MOUSEHWHEEL = 0x020E; // Horizontal mouse wheel message
 
     private double _logicalOffsetVertical;   // The actual ScrollViewer vertical offset
     private double _currentVisualOffsetVertical; // The target visual vertical offset (smooth)
@@ -28,10 +31,19 @@ public class SmoothScrollViewer : ScrollViewer
 
     private TranslateTransform? _transform;
     private UIElement? _content;
-    
+    private ScrollBar? _PART_VerticalScrollBar, _PART_HorizontalScrollBar;
+    private HwndSource? _hwndSource;
+
     private Orientation _activeScrollOrientation = Orientation.Vertical;
 
-    public IScrollPhysics Physics { get; set; } = new DefaultScrollPhysics();
+    private IScrollPhysics _verticalScrollPhysics = new DefaultScrollPhysics();
+    private IScrollPhysics _horizontalScrollPhysics = new DefaultScrollPhysics();
+
+    public IScrollPhysics Physics
+    {
+        get => _verticalScrollPhysics;
+        set => _horizontalScrollPhysics = _verticalScrollPhysics = value;
+    }
 
     public SmoothScrollViewer()
     {
@@ -39,7 +51,15 @@ public class SmoothScrollViewer : ScrollViewer
         Unloaded += OnUnloaded;
     }
 
-    #region Lifecycle
+    #region Initialization
+
+    public override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+
+        _PART_VerticalScrollBar=base.GetTemplateChild("PART_VerticalScrollBar") as ScrollBar;
+        _PART_HorizontalScrollBar=base.GetTemplateChild("PART_HorizontalScrollBar") as ScrollBar;
+    }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
@@ -54,11 +74,83 @@ public class SmoothScrollViewer : ScrollViewer
         {
             throw new InvalidOperationException("SmoothScrollViewer.Content must be a UIElement.");
         }
+
+        // Hook into the window's message loop for horizontal mouse wheel (touchpad horizontal scroll)
+        var window = Window.GetWindow(this);
+        if (window != null)
+        {
+            _hwndSource = PresentationSource.FromVisual(window) as HwndSource;
+            _hwndSource?.AddHook(WndProc);
+        }
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         StopRendering();
+        
+        // Remove the hook when unloaded
+        _hwndSource?.RemoveHook(WndProc);
+        _hwndSource = null;
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_MOUSEHWHEEL)
+        {
+            // Check if this control should handle the message
+            if (IsVisible && IsEnabled && IsEnableSmoothScrolling && CanScrollHorizontal)
+            {
+                // Check if mouse is over this control using hit testing
+                var mousePos = Mouse.GetPosition(this);
+                if (mousePos.X >= 0 && mousePos.X <= ActualWidth && 
+                    mousePos.Y >= 0 && mousePos.Y <= ActualHeight)
+                {
+                    // Verify the control is actually under the mouse (not obscured by other elements)
+                    if (InputHitTest(mousePos) is DependencyObject{ } hitElement)
+                    {
+                        // Check if there's a nested SmoothScrollViewer that should handle this instead
+                        var nestedScrollViewer = FindParentSmoothScrollViewer(hitElement);
+                        if (nestedScrollViewer == this)
+                        {
+                            // Extract the delta from wParam (high word)
+                            int delta = (short)((wParam.ToInt64() >> 16) & 0xFFFF);
+                            HandleScroll(-delta, Orientation.Horizontal);
+                            handled = true;
+                        }
+                    }
+                }
+            }
+        }
+        return IntPtr.Zero;
+    }
+
+
+    private void HandleScroll(int delta, Orientation orientation)
+    {
+        // Lock logical offset at scroll start
+        if (!_isRendering)
+        {
+            _logicalOffsetVertical = VerticalOffset;
+            _currentVisualOffsetVertical = _logicalOffsetVertical;
+            _visualDeltaVertical = 0;
+
+            _logicalOffsetHorizontal = HorizontalOffset;
+            _currentVisualOffsetHorizontal = _logicalOffsetHorizontal;
+            _visualDeltaHorizontal = 0;
+        }
+
+        _activeScrollOrientation = orientation;
+
+        if (orientation == Orientation.Vertical)
+        {
+            _verticalScrollPhysics.OnScroll(delta);
+        }
+        else
+        {
+            _horizontalScrollPhysics.OnScroll(delta);
+        }
+
+        StartRendering();
     }
 
     #endregion
@@ -85,34 +177,16 @@ public class SmoothScrollViewer : ScrollViewer
             effectiveOrientation = effectiveOrientation == Orientation.Vertical ? Orientation.Horizontal : Orientation.Vertical;
         }
 
-        // Lock logical offset at scroll start
-        if (!_isRendering)
-        {
-            _logicalOffsetVertical = VerticalOffset;
-            _currentVisualOffsetVertical = _logicalOffsetVertical;
-            _visualDeltaVertical = 0;
-
-            _logicalOffsetHorizontal = HorizontalOffset;
-            _currentVisualOffsetHorizontal = _logicalOffsetHorizontal;
-            _visualDeltaHorizontal = 0;
-            
-            _activeScrollOrientation = effectiveOrientation;
-        }
-
-
         if (effectiveOrientation == Orientation.Vertical && CanScrollVertical)
         {
-            _activeScrollOrientation = Orientation.Vertical;
-            Physics.OnScroll(e.Delta);
+            HandleScroll(e.Delta, Orientation.Vertical);
         }
         else if (effectiveOrientation == Orientation.Horizontal && CanScrollHorizontal)
         {
-            _activeScrollOrientation = Orientation.Horizontal;
-            Physics.OnScroll(e.Delta);
+            HandleScroll(e.Delta, Orientation.Horizontal);
         }
-
-        StartRendering();
     }
+
 
     /// <inheritdoc/>
     protected override void OnScrollChanged(ScrollChangedEventArgs e)
@@ -198,6 +272,8 @@ public class SmoothScrollViewer : ScrollViewer
             double finalOffsetVertical = MathExtension.Clamp(_currentVisualOffsetVertical, 0, ScrollableHeight);
 #endif
             ScrollToVerticalOffset(finalOffsetVertical);
+            //{TemplateBinding VerticalOffset}
+            _PART_VerticalScrollBar?.SetBinding(ScrollBar.ValueProperty,new Binding("VerticalOffset") { RelativeSource=new RelativeSource(RelativeSourceMode.TemplatedParent),Mode=BindingMode.OneWay});
             _visualDeltaVertical = 0;
             _logicalOffsetVertical = finalOffsetVertical;
             _transform!.Y = 0;
@@ -210,6 +286,7 @@ public class SmoothScrollViewer : ScrollViewer
             double finalOffsetHorizontal = MathExtension.Clamp(_currentVisualOffsetHorizontal, 0, ScrollableWidth);
 #endif
             ScrollToHorizontalOffset(finalOffsetHorizontal);
+            _PART_HorizontalScrollBar?.SetBinding(ScrollBar.ValueProperty,new Binding("HorizontalOffset") { RelativeSource=new RelativeSource(RelativeSourceMode.TemplatedParent),Mode=BindingMode.OneWay});
             _visualDeltaHorizontal = 0;
             _logicalOffsetHorizontal = finalOffsetHorizontal;
             _transform!.X = 0;
@@ -226,14 +303,14 @@ public class SmoothScrollViewer : ScrollViewer
 
         if (_activeScrollOrientation == Orientation.Vertical)
         {
-            _currentVisualOffsetVertical = MathExtension.Clamp(Physics.Update(_currentVisualOffsetVertical, dt), 0, ScrollableHeight);
+            _currentVisualOffsetVertical = MathExtension.Clamp(_verticalScrollPhysics.Update(_currentVisualOffsetVertical, dt), 0, ScrollableHeight);
         }
         else
         {
-            _currentVisualOffsetHorizontal = MathExtension.Clamp(Physics.Update(_currentVisualOffsetHorizontal, dt), 0, ScrollableWidth);
+            _currentVisualOffsetHorizontal = MathExtension.Clamp(_horizontalScrollPhysics.Update(_currentVisualOffsetHorizontal, dt), 0, ScrollableWidth);
         }
 
-        if (Physics.IsStable)
+        if (_verticalScrollPhysics.IsStable&& _horizontalScrollPhysics.IsStable)
         {
             StopRendering();
             return;
@@ -260,17 +337,19 @@ public class SmoothScrollViewer : ScrollViewer
         {
             _visualDeltaVertical = _currentVisualOffsetVertical - _logicalOffsetVertical;
             _transform!.Y = -_visualDeltaVertical;
+            _PART_VerticalScrollBar?.Value = _currentVisualOffsetVertical;
         }
         else
         {
             _visualDeltaHorizontal = _currentVisualOffsetHorizontal - _logicalOffsetHorizontal;
             _transform!.X = -_visualDeltaHorizontal;
+            _PART_HorizontalScrollBar?.Value = _currentVisualOffsetHorizontal;
         }
     }
 
     #endregion
 
-    #region Helpers
+    #region Helpers & Properties
 
     public bool CanScrollVertical
     {
@@ -391,6 +470,21 @@ public class SmoothScrollViewer : ScrollViewer
     public static readonly DependencyProperty PreferredScrollOrientationProperty =
         DependencyProperty.Register(nameof(PreferredScrollOrientation), typeof(Orientation), typeof(SmoothScrollViewer), new FrameworkPropertyMetadata(Orientation.Vertical));
 
-
+    /// <summary>
+    /// Finds the nearest SmoothScrollViewer parent that can scroll horizontally.
+    /// </summary>
+    private static SmoothScrollViewer? FindParentSmoothScrollViewer(DependencyObject element)
+    {
+        DependencyObject? current = element;
+        while (current != null)
+        {
+            if (current is SmoothScrollViewer ssv && ssv.CanScrollHorizontal && ssv.IsEnableSmoothScrolling)
+            {
+                return ssv;
+            }
+            current = VisualTreeHelper.GetParent(current);
+        }
+        return null;
+    }
     #endregion
 }
