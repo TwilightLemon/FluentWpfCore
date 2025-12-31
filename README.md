@@ -265,7 +265,10 @@ If you need non-solid backgrounds, keep the popup background transparent and pro
 
 ### SmoothScrollViewer
 
-Provides a smooth scrolling experience with customizable physics models and support for mouse wheel and touchpad input:
+A smooth scrolling ScrollViewer that enhances the native WPF control.
+- Supports mouse wheel and touchpad input
+- Supports horizontal and vertical scrolling, toggleable with Shift key; native touchpad horizontal scrolling supported
+- Customizable physics models for different scrolling animation effects
 
 ```xml
 <fluent:SmoothScrollViewer>

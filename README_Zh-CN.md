@@ -263,7 +263,10 @@ FluentPopup 是一个增强的弹出窗口控件。默认带有亚克力背景�
 
 ### SmoothScrollViewer
 
-提供平滑流畅的滚动体验，支持自定义物理模型，兼容鼠标滚轮、触控板：
+平滑滚动ScrollViewer，对WPF原生控件进行增强。
+- 支持鼠标滚轮和触控板输入
+- 支持横向和纵向滚动，可通过Shift键切换，原生支持触控板横向滚动
+- 可自定义物理模型，实现不同的滚动动画效果
 
 ```xml
 <fluent:SmoothScrollViewer>
@@ -389,7 +392,7 @@ FluentPopup 是一个增强的弹出窗口控件。默认带有亚克力背景�
 </fluent:SmoothScrollViewer>
 ```
 
-##### 自定义物理实现
+##### 自定义物理模型实现
 你可以通过实现 `IScrollPhysics` 接口来创建自己的物理模型：
 
 ```csharp
@@ -410,3 +413,144 @@ public class CustomScrollPhysics : IScrollPhysics
         return newOffset;
     }
 }
+```
+
+然后将其应用到 SmoothScrollViewer：
+```csharp
+smoothScrollViewer.Physics = new CustomScrollPhysics();
+```
+### Fluent 风格的 Menu
+这部分内容涉及自定义控件模板和样式，所以需要先引入资源：
+
+#### 1. 引入资源字典
+
+在 `App.xaml` 中引入 FluentWpfCore 的主题资源：
+
+```xml
+<Application.Resources>
+    <ResourceDictionary>
+        <ResourceDictionary.MergedDictionaries>
+            <!--引入 FluentWpfCore 默认主题-->
+            <ResourceDictionary Source="pack://application:,,,/FluentWpfCore;component/Themes/Generic.xaml" />
+        </ResourceDictionary.MergedDictionaries>
+        <SolidColorBrush x:Key="ForegroundColor" Color="#FF0E0E0E" />
+        
+        <!--可覆盖颜色值-->
+        <SolidColorBrush x:Key="AccentColor" Color="#FFFF8541" />
+    </ResourceDictionary>
+</Application.Resources>
+```
+
+| 可覆盖颜色值 | 说明 |
+|--------|------|
+| `AccentColor` | 强调色 |
+| `PopupBackgroundColor` | 弹出窗口背景色 |
+| `MaskColor` | 遮罩颜色，用于鼠标停留(Hover)时高亮 |
+
+#### 2. 应用全局样式（可选）
+
+```xml
+<!--ContextMenu 样式-->
+<Style BasedOn="{StaticResource FluentContextMenuStyle}" TargetType="{x:Type ContextMenu}">
+    <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
+</Style>
+
+<!--MenuItem 样式-->
+<Style BasedOn="{StaticResource FluentMenuItemStyle}" TargetType="MenuItem">
+    <Setter Property="Height" Value="36" />
+    <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+</Style>
+
+<!--TextBox ContextMenu-->
+<Style TargetType="TextBox">
+    <Setter Property="ContextMenu" Value="{StaticResource FluentTextBoxContextMenu}" />
+</Style>
+
+<!--ToolTip 样式-->
+<Style TargetType="{x:Type ToolTip}">
+    <Setter Property="fluent:FluentStyle.UseFluentStyle" Value="True" />
+    <Setter Property="Background" Value="{DynamicResource PopupBackgroundColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
+</Style>
+```
+
+#### Menu
+```xml
+<Menu Background="Transparent"
+      Foreground="{DynamicResource ForegroundColor}"
+      WindowChrome.IsHitTestVisibleInChrome="True">
+    <MenuItem Header="_File">
+        <MenuItem Header="_New" />
+        <MenuItem Header="_Open" />
+        <MenuItem Header="_Recent Files">
+            <MenuItem Header="File1.txt" />
+        </MenuItem>
+    </MenuItem>
+    <MenuItem Header="_Help" />
+</Menu>
+```
+
+#### ContextMenu
+
+```xml
+<TextBlock Text="Right Click Me">
+    <TextBlock.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="Menu Item 1"
+                      Icon="📋"
+                      InputGestureText="Ctrl+C" />
+            <MenuItem Header="Menu Item 2">
+                <MenuItem Header="Child Item 1" />
+                <MenuItem Header="Child Item 2" />
+                <MenuItem Header="Child Item 3"
+                          IsCheckable="True"
+                          IsChecked="True" />
+            </MenuItem>
+            <MenuItem Header="Menu Item 3" />
+        </ContextMenu>
+    </TextBlock.ContextMenu>
+</TextBlock>
+```
+
+#### ToolTip
+
+```xml
+<TextBlock Text="Hover over me"
+           ToolTipService.ShowDuration="3000">
+    <TextBlock.ToolTip>
+        <ToolTip>
+            <TextBlock Text="This is a FluentWpfCore ToolTip!"/>
+        </ToolTip>
+    </TextBlock.ToolTip>
+</TextBlock>
+```
+Or simply:
+```xml
+<TextBlock Text="Hover over me"
+           ToolTip="This is a FluentWpfCore ToolTip!"/>
+```
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 📄 许可证
+
+本项目基于 [MIT](https://opensource.org/licenses/MIT) 许可证开源。
+
+## 🙏 致谢
+
+感谢所有为 FluentWpfCore 做出贡献的开发者！
+
+## 🧷相关教程
+
+- Fluent Window: [WPF 模拟UWP原生窗口样式——亚克力|云母材质、自定义标题栏样式、原生DWM动画 （附我封装好的类）](https://blog.twlmgatito.cn/posts/window-material-in-wpf/)
+- Fluent Popup & ToolTip: [WPF中为Popup和ToolTip使用WindowMaterial特效 win10/win11](https://blog.twlmgatito.cn/posts/wpf-use-windowmaterial-in-popup-and-tooltip/)
+- Fluent ScrollViewer: [WPF 使用CompositionTarget.Rendering实现平滑流畅滚动的ScrollViewer，支持滚轮、触控板、触摸屏和笔](https://blog.twlmgatito.cn/posts/wpf-fluent-scrollviewer-with-all-device-supported/)
+- Fluent Menu: [WPF 为ContextMenu使用Fluent风格的亚克力材质特效](https://blog.twlmgatito.cn/posts/wpf-fluent-contextmenu-with-arcrylic/)
+
+---
+
+Made with ❤️ by [TwilightLemon](https://github.com/TwilightLemon)
+
