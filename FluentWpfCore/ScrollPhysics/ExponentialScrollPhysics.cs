@@ -1,22 +1,22 @@
-using FluentWpfCore.Helpers;
+ï»¿using FluentWpfCore.Helpers;
 using System.ComponentModel;
 
 namespace FluentWpfCore.ScrollPhysics;
 
 /// <summary>
-/// »ùÓÚÖ¸Êıº¯ÊıµÄ»º¶¯¹ö¶¯ÎïÀíÄ£ĞÍ
-/// Ê¹ÓÃ offset = target + (start - target) * e^(-k*t) ÊµÏÖÆ½»¬¹ö¶¯
-/// ÌØµã£º¿ªÊ¼¿ì¡¢½áÊøÂı£¬×ÔÈ»¼õËÙ¸Ğ
+/// åŸºäºæŒ‡æ•°å‡½æ•°çš„ç¼“åŠ¨æ»šåŠ¨ç‰©ç†æ¨¡å‹
+/// ä½¿ç”¨ offset = target + (start - target) * e^(-k*t) å®ç°å¹³æ»‘æ»šåŠ¨
+/// ç‰¹ç‚¹ï¼šå¼€å§‹å¿«ã€ç»“æŸæ…¢ï¼Œè‡ªç„¶å‡é€Ÿæ„Ÿ
 /// </summary>
 public class ExponentialScrollPhysics : IScrollPhysics
 {
     private double _decayRate = 8.0;
 
     /// <summary>
-    /// Ë¥¼õËÙÂÊ£¬ÊıÖµÔ½´ó£¬¹ö¶¯Ô½¿ìµ½´ïÄ¿±êÎ»ÖÃ
+    /// è¡°å‡é€Ÿç‡ï¼Œæ•°å€¼è¶Šå¤§ï¼Œæ»šåŠ¨è¶Šå¿«åˆ°è¾¾ç›®æ ‡ä½ç½®
     /// </summary>
     [Category("Scroll Physics")]
-    [Description("Ë¥¼õËÙÂÊ£¬ÊıÖµÔ½´ó£¬¹ö¶¯Ô½¿ìµ½´ïÄ¿±êÎ»ÖÃ¡£È¡Öµ1~20")]
+    [Description("è¡°å‡é€Ÿç‡ï¼Œæ•°å€¼è¶Šå¤§ï¼Œæ»šåŠ¨è¶Šå¿«åˆ°è¾¾ç›®æ ‡ä½ç½®ã€‚å–å€¼1~20")]
     public double DecayRate
     {
         get => _decayRate;
@@ -31,13 +31,13 @@ public class ExponentialScrollPhysics : IScrollPhysics
     }
 
     /// <summary>
-    /// Í£Ö¹ãĞÖµ£¬µ±Ê£Óà¾àÀëĞ¡ÓÚ´ËÖµÊ±Í£Ö¹¹ö¶¯
+    /// åœæ­¢é˜ˆå€¼ï¼Œå½“å‰©ä½™è·ç¦»å°äºæ­¤å€¼æ—¶åœæ­¢æ»šåŠ¨
     /// </summary>
     [Category("Scroll Physics")]
-    [Description("Í£Ö¹ãĞÖµ£¬µ±Ê£Óà¾àÀëĞ¡ÓÚ´ËÖµÊ±Í£Ö¹¹ö¶¯¡£È¡Öµ0.1~5")]
+    [Description("åœæ­¢é˜ˆå€¼ï¼Œå½“å‰©ä½™è·ç¦»å°äºæ­¤å€¼æ—¶åœæ­¢æ»šåŠ¨ã€‚å–å€¼0.1~5")]
     public double StopThreshold { get; set; } = 0.5;
 
-    // Ê£ÓàĞèÒª¹ö¶¯µÄ¾àÀë£¨¸ºÖµÏòÉÏ¹ö¶¯£¬ÕıÖµÏòÏÂ¹ö¶¯£©
+    // å‰©ä½™éœ€è¦æ»šåŠ¨çš„è·ç¦»ï¼ˆè´Ÿå€¼å‘ä¸Šæ»šåŠ¨ï¼Œæ­£å€¼å‘ä¸‹æ»šåŠ¨ï¼‰
     private double _remainingDistance;
     private bool _isStable = true;
 
@@ -46,7 +46,7 @@ public class ExponentialScrollPhysics : IScrollPhysics
     public void OnScroll(double delta)
     {
         _isStable = false;
-        // ÀÛ¼ÓÊ£Óà¾àÀë£¬Ö§³ÖÁ¬Ğø¹ö¶¯
+        // ç´¯åŠ å‰©ä½™è·ç¦»ï¼Œæ”¯æŒè¿ç»­æ»šåŠ¨
         _remainingDistance -= delta;
     }
 
@@ -59,15 +59,15 @@ public class ExponentialScrollPhysics : IScrollPhysics
             double finalDisplacement = _remainingDistance;
             _remainingDistance = 0;
             _isStable = true;
-            return currentOffset + finalDisplacement; // Ö±½Óµ½´ïÄ¿±ê
+            return currentOffset + finalDisplacement; // ç›´æ¥åˆ°è¾¾ç›®æ ‡
         }
 
-        // Ö¸Êı²åÖµÒò×Ó£º1 - e^(-k*dt)
-        // Ã¿Ö¡ÏûºÄÊ£Óà¾àÀëµÄÒ»¶¨±ÈÀı
+        // æŒ‡æ•°æ’å€¼å› å­ï¼š1 - e^(-k*dt)
+        // æ¯å¸§æ¶ˆè€—å‰©ä½™è·ç¦»çš„ä¸€å®šæ¯”ä¾‹
         double factor = 1.0 - Math.Exp(-_decayRate * dt);
         double displacement = _remainingDistance * factor;
 
-        // ¼õÉÙÊ£Óà¾àÀë
+        // å‡å°‘å‰©ä½™è·ç¦»
         _remainingDistance -= displacement;
 
         return currentOffset + displacement;

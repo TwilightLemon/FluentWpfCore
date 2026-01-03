@@ -267,17 +267,18 @@ public class WindowMaterial : DependencyObject
         var osVersion = Environment.OSVersion.Version;
         var windows10_1809 = new Version(10, 0, 17763);
         var windows11 = new Version(10, 0, 22621);
+        bool isWindows10=(osVersion >= windows10_1809 && osVersion < windows11);
 
-        if (UseWindowComposition || (osVersion >= windows10_1809 && osVersion < windows11))
+        if (UseWindowComposition || isWindows10)
         {
-            SetWindowProperty(true);
+            SetWindowProperty(isWindows10 ? 1: 0);
             SetWindowCompositon(true);
         }
         else
         {
             if (_currentAPI == APIType.COMPOSITION)
                 SetWindowCompositon(false);
-            SetWindowProperty(false);
+            SetWindowProperty(-1);
             SetBackDropType(MaterialMode);
         }
     }
@@ -311,11 +312,13 @@ public class WindowMaterial : DependencyObject
         _currentAPI = enable ? APIType.COMPOSITION : APIType.NONE;
     }
 
-    private void SetWindowProperty(bool isLagcy = false)
+    //on windows 10 1809, margin = 1 or 0 (this will disable the window drop shadow);
+    //on windows 11, margin = -1 while using SetBackDropType() method
+    //               margin = 0 while using SetWindowComposition() method
+    private void SetWindowProperty(int margin)
     {
         if (_hWnd == IntPtr.Zero) return;
         var hwndSource = (HwndSource)PresentationSource.FromVisual(_window);
-        int margin = isLagcy ? 0 : -1;
         MaterialApis.SetWindowProperties(hwndSource, margin);
     }
 

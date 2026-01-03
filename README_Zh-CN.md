@@ -9,7 +9,7 @@
 
 ## ✨ 特性
 
-### 🪟 窓体特效系统
+### 🪟 窗体特效系统
 - **多材质支持** - Acrylic、Mica、MicaAlt 等现代窗口材质
 - **灵活组合** - 材质效果 + 圆角 + 阴影 + DWM 动画自由组合
 - **跨版本兼容** - 支持 Windows 10 旧版 Composition API 和 Windows 11 System Backdrop API
