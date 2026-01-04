@@ -7,6 +7,8 @@ namespace FluentWpfCore.ScrollPhysics
         void OnScroll(double delta);
         double Update(double currentOffset, double dt);
         bool IsStable { get; }
+
+        bool IsPreciseMode { get; set; }
     }
 
     internal static class IScrollPhysicsExtension

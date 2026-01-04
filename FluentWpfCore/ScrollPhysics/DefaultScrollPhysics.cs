@@ -1,5 +1,6 @@
 ﻿using FluentWpfCore.Helpers;
 using System.ComponentModel;
+using System.Windows.Input;
 
 namespace FluentWpfCore.ScrollPhysics;
 
@@ -7,11 +8,27 @@ public class DefaultScrollPhysics : IScrollPhysics
 {
     // 摩擦系数的有效范围：0.85 ~ 0.96
     // Smoothness 0 -> Friction 0.85 (快速停止)
-    // Smoothness 1 -> Friction 0.96 (平滑持久)
+    // Smoothness 1 -> Friction 0.96 (缓动延迟)
     private const double MinFriction = 0.85;
     private const double MaxFriction = 0.96;
+    private const double PreciseModeFriction = 0.76;
 
+    /// <summary>
+    /// 根据 Smoothness 计算实际的摩擦系数
+    /// </summary>
+    private double _friction = 0d;
     private double _smoothness = 0.72;
+    private bool _isPreciseMode = false;
+
+    public DefaultScrollPhysics()
+    {
+        InitParameters();
+    }
+
+    private void InitParameters()
+    {
+        _friction = MinFriction + (MaxFriction - MinFriction) * _smoothness;
+    }
 
     /// <summary>
     /// 滚动平滑度，数值越大，滚动越平滑持久；数值越小，越快停下来
@@ -28,14 +45,15 @@ public class DefaultScrollPhysics : IScrollPhysics
 #else
             _smoothness = MathExtension.Clamp(value, 0.0, 1.0);
 #endif
+            InitParameters();
         }
     }
 
-    /// <summary>
-    /// 根据 Smoothness 计算实际的摩擦系数
-    /// </summary>
-    private double Friction => MinFriction + _smoothness * (MaxFriction - MinFriction);
-
+    public bool IsPreciseMode
+    {
+        get => _isPreciseMode;
+        set => _isPreciseMode = value;
+    }
 
     /// <summary>
     /// 参考帧时间（用于归一化计算，与实际显示器帧率无关）
@@ -67,7 +85,7 @@ public class DefaultScrollPhysics : IScrollPhysics
         double newOffset = currentOffset;
 
 
-        if (Math.Abs(_velocity) < 0.5)
+        if (Math.Abs(_velocity) < 0.01)
         {
             _velocity = 0;
             _isStable = true;
@@ -76,9 +94,9 @@ public class DefaultScrollPhysics : IScrollPhysics
         {
             // 位移系数 = (1 - Friction)，保证总位移等于初始速度
             // 使用帧时间因子调整摩擦力和位移，实现帧率无关
-            double friction = Math.Pow(Friction, timeFactor);
-            double displacement = _velocity * (1 - friction);
-            _velocity *= friction;
+            double f = Math.Pow(_isPreciseMode? PreciseModeFriction : _friction, timeFactor);
+            double displacement = _velocity * (1 - f);
+            _velocity *= f;
             newOffset = currentOffset + displacement;
         }
 

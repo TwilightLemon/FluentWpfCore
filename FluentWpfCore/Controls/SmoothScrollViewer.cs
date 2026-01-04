@@ -1,4 +1,5 @@
-﻿using FluentWpfCore.Helpers;
+﻿using System;
+using FluentWpfCore.Helpers;
 using FluentWpfCore.ScrollPhysics;
 using System.Diagnostics;
 using System.Windows;
@@ -52,7 +53,6 @@ public class SmoothScrollViewer : ScrollViewer
     {
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
-        IsManipulationEnabled = true;
     }
 
     #region Initialization
@@ -78,6 +78,9 @@ public class SmoothScrollViewer : ScrollViewer
         {
             throw new InvalidOperationException("SmoothScrollViewer.Content must be a UIElement.");
         }
+
+        // Remove any existing hook before reassigning _hwndSource to avoid multiple registrations
+        _hwndSource?.RemoveHook(WndProc);
 
         // Hook into the window's message loop for horizontal mouse wheel (touchpad horizontal scroll)
         var window = Window.GetWindow(this);
@@ -129,7 +132,7 @@ public class SmoothScrollViewer : ScrollViewer
     }
 
 
-    private void HandleScroll(double deltaVertical, double deltaHorizontal)
+    private void HandleScroll(double deltaVertical, double deltaHorizontal, bool isPreciseMode=false)
     {
         if (deltaVertical == 0 && deltaHorizontal == 0) return;
 
@@ -144,6 +147,9 @@ public class SmoothScrollViewer : ScrollViewer
             _currentVisualOffsetHorizontal = _logicalOffsetHorizontal;
             _visualDeltaHorizontal = 0;
         }
+
+        _verticalScrollPhysics.IsPreciseMode = isPreciseMode;
+        _horizontalScrollPhysics.IsPreciseMode = isPreciseMode;
 
         if (deltaVertical != 0)
         {
@@ -224,7 +230,26 @@ public class SmoothScrollViewer : ScrollViewer
             return;
         }
 
-        HandleScroll(deltaV, deltaH);
+        HandleScroll(deltaV, deltaH,true);
+        e.Handled = true;
+    }
+
+    protected override void OnManipulationInertiaStarting(ManipulationInertiaStartingEventArgs e)
+    {
+        base.OnManipulationInertiaStarting(e);
+
+        if (!IsEnableSmoothManipulating)
+        {
+            return;
+        }
+
+        if (e.TranslationBehavior != null)
+        {
+            double speed = e.InitialVelocities.LinearVelocity.Length; // DIP per ms
+            double decel = MathExtension.Clamp(speed / 600.0, 0.0012, 0.012);
+            e.TranslationBehavior.DesiredDeceleration = decel;
+        }
+
         e.Handled = true;
     }
 
@@ -443,9 +468,15 @@ public class SmoothScrollViewer : ScrollViewer
 
     // Using a DependencyProperty as the backing store for IsEnableSmoothManipulating.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty IsEnableSmoothManipulatingProperty =
-        DependencyProperty.Register(nameof(IsEnableSmoothManipulating), typeof(bool), typeof(SmoothScrollViewer), new PropertyMetadata(false));
+        DependencyProperty.Register(nameof(IsEnableSmoothManipulating), typeof(bool), typeof(SmoothScrollViewer), new PropertyMetadata(false,OnIsEnableSmoothManipulatingChanged));
 
-
+    private static void OnIsEnableSmoothManipulatingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if(d is SmoothScrollViewer{ } sv)
+        {
+            sv.IsManipulationEnabled = e.NewValue is true;
+        }
+    }
 
     public bool IsEnableSmoothScrolling
     {

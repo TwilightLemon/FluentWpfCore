@@ -43,6 +43,8 @@ public class ExponentialScrollPhysics : IScrollPhysics
 
     public bool IsStable => _isStable;
 
+    public bool IsPreciseMode { get; set; } = false;
+
     public void OnScroll(double delta)
     {
         _isStable = false;
