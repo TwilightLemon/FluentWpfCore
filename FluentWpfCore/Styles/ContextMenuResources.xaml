@@ -3,49 +3,49 @@
                     xmlns:controls="clr-namespace:FluentWpfCore.Controls"
                     xmlns:prop="clr-namespace:FluentWpfCore.AttachedProperties"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
-    <!--  菜单边框内边距  -->
+    <!-- 菜单边框内边距 / Menu border padding -->
     <Thickness x:Key="MenuBorderPadding">0,3,0,3</Thickness>
 
-    <!--  菜单项外边距  -->
+    <!-- 菜单项外边距 / Menu item margin -->
     <Thickness x:Key="MenuItemMargin">4,1</Thickness>
 
-    <!--  菜单项内容内边距  -->
+    <!-- 菜单项内容内边距 / Menu item content padding -->
     <Thickness x:Key="MenuItemContentPadding">10,6</Thickness>
 
-    <!--  顶级菜单项外边距  -->
+    <!-- 顶级菜单项外边距 / Top level item margin -->
     <Thickness x:Key="TopLevelItemMargin">4</Thickness>
 
-    <!--  顶级菜单项内容边距  -->
+    <!-- 顶级菜单项内容边距 / Top level content margin -->
     <Thickness x:Key="TopLevelContentMargin">10</Thickness>
 
-    <!--  菜单圆角半径  -->
+    <!-- 菜单圆角半径 / Menu corner radius -->
     <CornerRadius x:Key="MenuCornerRadius">4</CornerRadius>
 
-    <!--  顶级菜单圆角半径  -->
+    <!-- 顶级菜单圆角半径 / Top level corner radius -->
     <CornerRadius x:Key="TopLevelCornerRadius">6</CornerRadius>
 
-    <!--  菜单动画持续时间  -->
+    <!-- 菜单动画持续时间 / Menu animation duration -->
     <Duration x:Key="MenuAnimationDuration">0:0:0.167</Duration>
     <sys:Double x:Key="MenuAnimationDistance">-30</sys:Double>
 
-    <!--  复选标记图标路径数据  -->
+    <!-- 复选标记图标路径数据 / Check mark icon path data -->
     <PathGeometry x:Key="CheckGraph">
         M392.533333 806.4L85.333333 503.466667l59.733334-59.733334 247.466666 247.466667L866.133333 213.333333l59.733334 59.733334L392.533333 806.4z
     </PathGeometry>
 
-    <!--  前进箭头图标路径数据（用于子菜单指示器）  -->
+    <!-- 前进箭头图标路径数据（用于子菜单指示器）/ Forward arrow icon path data (for submenu indicator) -->
     <PathGeometry x:Key="ForwardGraph">
         M283.648 174.081l57.225-59.008 399.479 396.929-399.476 396.924-57.228-59.004 335.872-337.92z
     </PathGeometry>
 
-    <!--  TextBox 右键菜单  -->
+    <!-- TextBox 右键菜单 / TextBox context menu -->
     <ContextMenu x:Key="FluentTextBoxContextMenu">
         <MenuItem Command="ApplicationCommands.Copy" />
         <MenuItem Command="ApplicationCommands.Cut" />
         <MenuItem Command="ApplicationCommands.Paste" />
     </ContextMenu>
 
-    <!--  菜单项ScrollViewer样式  -->
+    <!-- 菜单项ScrollViewer样式 / Menu item ScrollViewer style -->
     <Style x:Key="MenuItemScrollViewerStyle"
            BasedOn="{StaticResource {x:Type ScrollViewer}}"
            TargetType="{x:Type ScrollViewer}">
@@ -53,7 +53,7 @@
         <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
     </Style>
 
-    <!--  默认集合焦点视觉样式  得到键盘焦点时显示  -->
+    <!-- 默认集合焦点视觉样式 得到键盘焦点时显示 / Default collection focus visual style, shown when keyboard focus is obtained -->
     <Style x:Key="FluentCollectionFocusVisualStyle">
         <Setter Property="Control.Template">
             <Setter.Value>
@@ -69,7 +69,7 @@
         </Setter>
     </Style>
 
-    <!--  默认上下文菜单样式  -->
+    <!-- 默认上下文菜单样式 / Default context menu style -->
     <Style x:Key="FluentContextMenuStyle" TargetType="{x:Type ContextMenu}">
         <Setter Property="prop:FluentStyle.UseFluentStyle" Value="True" />
         <Setter Property="Background" Value="{DynamicResource PopupBackgroundColor}" />
@@ -91,11 +91,11 @@
                         <ScrollViewer x:Name="scrollViewer"
                                       CanContentScroll="True"
                                       Style="{StaticResource MenuItemScrollViewerStyle}">
-                            <!--  用于动画的转换变换  -->
+                            <!-- 用于动画的转换变换 / Translate transform for animation -->
                             <ScrollViewer.RenderTransform>
                                 <TranslateTransform />
                             </ScrollViewer.RenderTransform>
-                            <!--  菜单项容器  -->
+                            <!-- 菜单项容器 / Menu items container -->
                             <StackPanel ClipToBounds="True"
                                         IsItemsHost="True"
                                         KeyboardNavigation.DirectionalNavigation="Cycle"
@@ -103,12 +103,12 @@
                         </ScrollViewer>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <!--  菜单打开时的动画效果  -->
+                        <!-- 菜单打开时的动画效果 / Animation effect when menu opens -->
                         <Trigger Property="IsOpen" Value="True">
                             <Trigger.EnterActions>
                                 <BeginStoryboard>
                                     <Storyboard>
-                                        <!--  Y轴平移动画  -->
+                                        <!-- Y轴平移动画 / Y-axis translation animation -->
                                         <DoubleAnimation Storyboard.TargetName="scrollViewer"
                                                          Storyboard.TargetProperty="(ScrollViewer.RenderTransform).(TranslateTransform.Y)"
                                                          From="{StaticResource MenuAnimationDistance}"
@@ -128,7 +128,7 @@
         </Setter>
     </Style>
 
-    <!--  顶级菜单项头部模板（带子菜单）  -->
+    <!-- 顶级菜单项头部模板（带子菜单）/ Top level menu item header template (with submenu) -->
     <ControlTemplate x:Key="MenuItem.TopLevelHeaderTemplate" TargetType="{x:Type MenuItem}">
         <Border x:Name="Border"
                 Margin="{StaticResource TopLevelItemMargin}"
@@ -142,7 +142,7 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <!--  菜单项内容区域  -->
+                <!-- 菜单项内容区域 / Menu item content area -->
                 <Grid Margin="{StaticResource TopLevelContentMargin}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
