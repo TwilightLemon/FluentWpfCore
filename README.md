@@ -238,7 +238,7 @@ When `UseWindowComposition="True"` a different API path is used to enable legacy
 
 <fluent:FluentPopup x:Name="testPopup"
                     Background="{DynamicResource PopupBackgroundColor}"
-                    ExtPopupAnimation="SlideDown"
+                    ExtPopupAnimation="Slide"
                     FollowWindowMoving="False"
                     Placement="Bottom"
                     WindowCorner="Round"
@@ -257,7 +257,7 @@ When `UseWindowComposition="True"` a different API path is used to enable legacy
 | Property | Type | Description |
 |------|------|------|
 | `Background` | `SolidColorBrush` | Popup background color (only solid colors supported) |
-| `ExtPopupAnimation` | `ExPopupAnimation` | Animation type: `None`, `SlideUp`, `SlideDown` |
+| `ExtPopupAnimation` | `ExPopupAnimation` | Animation type: `None`, `Slide`, `Fade` |
 | `FollowWindowMoving` | `bool` | Whether the popup follows window movement |
 | `WindowCorner` | `WindowCorner` | Corner style for the popup |
 

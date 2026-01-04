@@ -236,7 +236,7 @@ FluentPopup 是一个增强的弹出窗口控件。默认带有亚克力背景�
 
 <fluent:FluentPopup x:Name="testPopup"
                     Background="{DynamicResource PopupBackgroundColor}"
-                    ExtPopupAnimation="SlideDown"
+                    ExtPopupAnimation="Slide"
                     FollowWindowMoving="False"
                     Placement="Bottom"
                     WindowCorner="Round"
@@ -255,7 +255,7 @@ FluentPopup 是一个增强的弹出窗口控件。默认带有亚克力背景�
 | 属性 | 类型 | 说明 |
 |------|------|------|
 | `Background` | `SolidColorBrush` | 弹出窗口背景色 |
-| `ExtPopupAnimation` | `ExPopupAnimation` | 动画类型：`None`、`SlideUp`、`SlideDown` |
+| `ExtPopupAnimation` | `ExPopupAnimation` | 动画类型：`None`、`Slide`、`Fade` |
 | `FollowWindowMoving` | `bool` | 是否跟随窗口移动 |
 | `WindowCorner` | `WindowCorner` | 弹出窗口的圆角样式 |
 
