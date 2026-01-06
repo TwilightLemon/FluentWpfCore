@@ -98,7 +98,7 @@ namespace FluentWpfCore.AttachedProperties
 
         private static void StylusUp(object sender, StylusEventArgs e)
         {
-            var currentPosition = e.GetPosition(null);
+            //var currentPosition = e.GetPosition(null);
 
             if (_device != null &&
                 _device.IsActive)

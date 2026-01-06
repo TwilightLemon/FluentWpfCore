@@ -11,7 +11,7 @@ public class DefaultScrollPhysics : IScrollPhysics
     // Smoothness 1 -> Friction 0.96 (缓动延迟)
     private const double MinFriction = 0.85;
     private const double MaxFriction = 0.96;
-    private const double PreciseModeFriction = 0.76;
+    private const double PreciseModeFriction = 0.72;
 
     /// <summary>
     /// 根据 Smoothness 计算实际的摩擦系数

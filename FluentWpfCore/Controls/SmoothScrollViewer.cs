@@ -15,7 +15,7 @@ namespace FluentWpfCore.Controls;
 /// <inheritdoc/>
 public class SmoothScrollViewer : ScrollViewer
 {
-    private const double LogicalOffsetUpdateInterval = 1.0 / 24.0; // 24Hz for ScrollBar updates
+    private const double LogicalOffsetUpdateInterval = 1.0 / 24.0; // 24Hz for logical offset updates
     private const int WM_MOUSEHWHEEL = 0x020E; // Horizontal mouse wheel message
 
     private double _logicalOffsetVertical;   // The actual ScrollViewer vertical offset
@@ -224,7 +224,9 @@ public class SmoothScrollViewer : ScrollViewer
         double deltaH = CanScrollHorizontal ? translation.X : 0;
         double deltaV = CanScrollVertical ? translation.Y : 0;
 
-        if (deltaH == 0 && deltaV == 0)
+        if ((deltaH == 0 && deltaV == 0) 
+            || e.DeltaManipulation.Expansion.Length != 0    // multi-point touch is not handled.
+            || e.DeltaManipulation.Rotation != 0)
         {
             base.OnManipulationDelta(e);
             return;
@@ -246,7 +248,7 @@ public class SmoothScrollViewer : ScrollViewer
         if (e.TranslationBehavior != null)
         {
             double speed = e.InitialVelocities.LinearVelocity.Length; // DIP per ms
-            double decel = MathExtension.Clamp(speed / 600.0, 0.0012, 0.012);
+            double decel = MathExtension.Clamp(speed / 800.0, 0.0012, 0.012);
             e.TranslationBehavior.DesiredDeceleration = decel;
         }
 
@@ -317,6 +319,8 @@ public class SmoothScrollViewer : ScrollViewer
         _content!.IsHitTestVisible = false;
     }
 
+    private static readonly Binding HorizontalOffsetBinding = new("HorizontalOffset") { RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent), Mode = BindingMode.OneWay };
+    private static readonly Binding VerticalOffsetBinding = new("VerticalOffset") { RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent), Mode = BindingMode.OneWay };
     private void StopRendering()
     {
         if (!_isRendering) return;
@@ -330,8 +334,8 @@ public class SmoothScrollViewer : ScrollViewer
         ScrollToVerticalOffset(finalOffsetVertical);
         ScrollToHorizontalOffset(finalOffsetHorizontal);
 
-        _PART_VerticalScrollBar?.SetBinding(ScrollBar.ValueProperty,new Binding("VerticalOffset") { RelativeSource=new RelativeSource(RelativeSourceMode.TemplatedParent),Mode=BindingMode.OneWay});
-        _PART_HorizontalScrollBar?.SetBinding(ScrollBar.ValueProperty,new Binding("HorizontalOffset") { RelativeSource=new RelativeSource(RelativeSourceMode.TemplatedParent),Mode=BindingMode.OneWay});
+        _PART_VerticalScrollBar?.SetBinding(ScrollBar.ValueProperty,VerticalOffsetBinding);
+        _PART_HorizontalScrollBar?.SetBinding(ScrollBar.ValueProperty,HorizontalOffsetBinding);
 
         _visualDeltaVertical = 0;
         _logicalOffsetVertical = finalOffsetVertical;

@@ -266,7 +266,7 @@ public class WindowMaterial : DependencyObject
 
         var osVersion = Environment.OSVersion.Version;
         var windows10_1809 = new Version(10, 0, 17763);
-        var windows11 = new Version(10, 0, 22621);
+        var windows11 = new Version(10, 0, 22000);
         bool isWindows10=(osVersion >= windows10_1809 && osVersion < windows11);
 
         if (UseWindowComposition || isWindows10)
