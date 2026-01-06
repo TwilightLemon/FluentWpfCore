@@ -9,6 +9,14 @@ using System.Windows.Media;
 
 namespace FluentWpfCore.AttachedProperties
 {
+    /// <summary>
+    /// Touch device implementation that simulates touch input from stylus events.
+    /// 触摸设备实现，从触笔事件模拟触摸输入。
+    /// </summary>
+    /// <remarks>
+    /// Origin source: https://github.com/OrgEleCho/EleCho.WpfSuite/blob/master/EleCho.WpfSuite.Input/Input/StylusTouchDevice.cs
+    /// MIT License
+    /// </remarks>
     public class StylusTouchDevice : TouchDevice
     {
         #region Class Members
@@ -18,6 +26,10 @@ namespace FluentWpfCore.AttachedProperties
         private static bool _stylusMoved;
         private static Point _stylusDownPosition;
 
+        /// <summary>
+        /// Gets or sets the current position of the stylus.
+        /// 获取或设置触笔的当前位置。
+        /// </summary>
         public Point Position { get; set; }
 
         #endregion
@@ -153,30 +165,62 @@ namespace FluentWpfCore.AttachedProperties
 
 
 
+        /// <summary>
+        /// Gets a value indicating whether to simulate touch events from stylus input.
+        /// 获取一个值，指示是否从触笔输入模拟触摸事件。
+        /// </summary>
+        /// <param name="obj">The dependency object. 依赖对象。</param>
+        /// <returns>true if simulation is enabled; otherwise, false. 如果启用了模拟则为 true；否则为 false。</returns>
         public static bool GetSimulate(DependencyObject obj)
         {
             return (bool)obj.GetValue(SimulateProperty);
         }
 
+        /// <summary>
+        /// Sets a value indicating whether to simulate touch events from stylus input.
+        /// 设置一个值，指示是否从触笔输入模拟触摸事件。
+        /// </summary>
+        /// <param name="obj">The dependency object. 依赖对象。</param>
+        /// <param name="value">true to enable simulation; otherwise, false. 为 true 则启用模拟；否则为 false。</param>
         public static void SetSimulate(DependencyObject obj, bool value)
         {
             obj.SetValue(SimulateProperty, value);
         }
 
+        /// <summary>
+        /// Gets the movement threshold before touch events are triggered.
+        /// 获取触发触摸事件前的移动阈值。
+        /// </summary>
+        /// <param name="obj">The dependency object. 依赖对象。</param>
+        /// <returns>The movement threshold in pixels. 移动阈值（像素）。</returns>
         public static double GetMoveThreshold(DependencyObject obj)
         {
             return (double)obj.GetValue(MoveThresholdProperty);
         }
 
+        /// <summary>
+        /// Sets the movement threshold before touch events are triggered.
+        /// 设置触发触摸事件前的移动阈值。
+        /// </summary>
+        /// <param name="obj">The dependency object. 依赖对象。</param>
+        /// <param name="value">The movement threshold in pixels. 移动阈值（像素）。</param>
         public static void SetMoveThreshold(DependencyObject obj, double value)
         {
             obj.SetValue(MoveThresholdProperty, value);
         }
 
 
+        /// <summary>
+        /// Identifies the Simulate attached property.
+        /// 标识 Simulate 附加属性。
+        /// </summary>
         public static readonly DependencyProperty SimulateProperty =
             DependencyProperty.RegisterAttached("Simulate", typeof(bool), typeof(StylusTouchDevice), new PropertyMetadata(false, SimulatePropertyChanged));
 
+        /// <summary>
+        /// Identifies the MoveThreshold attached property.
+        /// 标识 MoveThreshold 附加属性。
+        /// </summary>
         public static readonly DependencyProperty MoveThresholdProperty =
             DependencyProperty.RegisterAttached("MoveThreshold", typeof(double), typeof(StylusTouchDevice), new PropertyMetadata(3.0));
 
