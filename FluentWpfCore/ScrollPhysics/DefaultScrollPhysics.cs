@@ -22,7 +22,7 @@ public class DefaultScrollPhysics : IScrollPhysics
     // Smoothness 1 -> Friction 0.96 (smooth deceleration / 平滑减速)
     private const double MinFriction = 0.85;
     private const double MaxFriction = 0.96;
-    private const double PreciseModeFriction = 0.72;
+    private const double PreciseModeFriction = 0.88;
 
     /// <summary>
     /// Calculates the actual friction coefficient based on Smoothness.
@@ -127,7 +127,7 @@ public class DefaultScrollPhysics : IScrollPhysics
             // 使用帧时间因子调整摩擦力和位移，实现帧率无关
             double f = Math.Pow(_isPreciseMode? PreciseModeFriction : _friction, timeFactor);
             double displacement = _velocity * (1 - f);
-            _velocity *= f;
+            _velocity -= displacement;
             newOffset = currentOffset + displacement;
         }
 

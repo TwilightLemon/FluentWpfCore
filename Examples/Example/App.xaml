@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fluent="https://github.com/TwilightLemon/FluentWpfCore"
              xmlns:local="clr-namespace:Example"
-             StartupUri="/MainWindow.xaml">
+             StartupUri="/FluentListBoxTestWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

@@ -19,15 +19,17 @@ namespace FluentWpfCore.Controls;
 /// <remarks>
 /// This control provides enhanced scrolling behavior with customizable physics models,
 /// support for both horizontal and vertical scrolling, and smooth animations.
-/// Performance is optimized using CompositionTarget.Rendering for frame-rate independent physics.
 /// 此控件提供增强的滚动行为，具有可自定义的物理模型、
 /// 支持横向和纵向滚动以及平滑动画。
-/// 性能通过使用 CompositionTarget.Rendering 实现与帧率无关的物理模拟而得到优化。
 /// </remarks>
 public class SmoothScrollViewer : ScrollViewer
 {
-    private const double LogicalOffsetUpdateInterval = 1.0 / 24.0; // 24Hz for logical offset updates
+    //TODO: Add dependency properties for this threshold.
+    // may affect Visualization. One of the solutions is to set VirtualizingPanel.CacheLength.
+    private const double LogicalOffsetUpdateDistanceThreshold = 20.0; // Update logical offset after accumulated movement
     private const int WM_MOUSEHWHEEL = 0x020E; // Horizontal mouse wheel message
+
+    private const double VisualUpdateStepThreshold = 0.1d; // Minimum visual offset change to update transform
 
     private double _logicalOffsetVertical;   // The actual ScrollViewer vertical offset
     private double _currentVisualOffsetVertical; // The target visual vertical offset (smooth)
@@ -38,8 +40,16 @@ public class SmoothScrollViewer : ScrollViewer
     private double _visualDeltaHorizontal;     // Visual horizontal offset delta from logical offset
 
     private long _lastTimestamp;
-    private double _logicalOffsetUpdateAccumulator;
     private bool _isRendering;
+
+    private double _logicalOffsetUpdateAccumulatorVertical;
+    private double _logicalOffsetUpdateAccumulatorHorizontal;
+
+    private double _lastRenderedOffsetVertical;
+    private double _lastRenderedOffsetHorizontal;
+
+    private double _lastLogicalSyncVertical;
+    private double _lastLogicalSyncHorizontal;
 
     private TranslateTransform? _transform;
     private UIElement? _content;
@@ -55,9 +65,7 @@ public class SmoothScrollViewer : ScrollViewer
     /// </summary>
     /// <remarks>
     /// The physics model determines how the scrolling decelerates and stops.
-    /// Built-in implementations include DefaultScrollPhysics and ExponentialScrollPhysics.
     /// 物理模型决定滚动如何减速和停止。
-    /// 内置实现包括 DefaultScrollPhysics 和 ExponentialScrollPhysics。
     /// </remarks>
     /// <exception cref="ArgumentNullException">Thrown when value is null. 当值为 null 时引发。</exception>
     public IScrollPhysics Physics
@@ -75,6 +83,8 @@ public class SmoothScrollViewer : ScrollViewer
     {
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
+
+        CacheMode = new BitmapCache() { SnapsToDevicePixels = true};
     }
 
     #region Initialization
@@ -143,7 +153,8 @@ public class SmoothScrollViewer : ScrollViewer
                         {
                             // Extract the delta from wParam (high word)
                             int delta = (short)((wParam.ToInt64() >> 16) & 0xFFFF);
-                            HandleScroll(0, -delta);
+                            bool isPreciseMode = delta % Mouse.MouseWheelDeltaForOneLine != 0;
+                            HandleScroll(0, -delta,isPreciseMode);
                             handled = true;
                         }
                     }
@@ -210,13 +221,15 @@ public class SmoothScrollViewer : ScrollViewer
             effectiveOrientation = effectiveOrientation == Orientation.Vertical ? Orientation.Horizontal : Orientation.Vertical;
         }
 
+        bool isPreciseMode= e.Delta % Mouse.MouseWheelDeltaForOneLine != 0;
+
         if (effectiveOrientation == Orientation.Vertical && CanScrollVertical)
         {
-            HandleScroll(e.Delta, 0);
+            HandleScroll(e.Delta, 0, isPreciseMode);
         }
         else if (effectiveOrientation == Orientation.Horizontal && CanScrollHorizontal)
         {
-            HandleScroll(0, e.Delta);
+            HandleScroll(0, e.Delta, isPreciseMode);
         }
     }
 
@@ -299,10 +312,7 @@ public class SmoothScrollViewer : ScrollViewer
             else
             {
                 _visualDeltaVertical = 0;
-                if (_transform != null)
-                {
-                    _transform.Y = 0;
-                }
+                _transform!.Y = 0;
             }
         }
 
@@ -318,10 +328,7 @@ public class SmoothScrollViewer : ScrollViewer
             else
             {
                 _visualDeltaHorizontal = 0;
-                if (_transform != null)
-                {
-                    _transform.X = 0;
-                }
+                _transform!.X = 0;
             }
         }
     }
@@ -335,7 +342,10 @@ public class SmoothScrollViewer : ScrollViewer
         if (_isRendering) return;
 
         _lastTimestamp = Stopwatch.GetTimestamp();
-        _logicalOffsetUpdateAccumulator = 0;
+        _logicalOffsetUpdateAccumulatorVertical = 0;
+        _logicalOffsetUpdateAccumulatorHorizontal = 0;
+        _lastLogicalSyncVertical = _currentVisualOffsetVertical;
+        _lastLogicalSyncHorizontal = _currentVisualOffsetHorizontal;
         CompositionTarget.Rendering += OnRendering;
         _isRendering = true;
         _content!.IsHitTestVisible = false;
@@ -385,21 +395,39 @@ public class SmoothScrollViewer : ScrollViewer
             return;
         }
 
-        _logicalOffsetUpdateAccumulator += dt;
-        if (_logicalOffsetUpdateAccumulator >= LogicalOffsetUpdateInterval)
+        double deltaVerticalForLogicalUpdate = Math.Abs(_currentVisualOffsetVertical - _lastLogicalSyncVertical);
+        double deltaHorizontalForLogicalUpdate = Math.Abs(_currentVisualOffsetHorizontal - _lastLogicalSyncHorizontal);
+
+        _logicalOffsetUpdateAccumulatorVertical += deltaVerticalForLogicalUpdate;
+        _logicalOffsetUpdateAccumulatorHorizontal += deltaHorizontalForLogicalUpdate;
+
+        if (_logicalOffsetUpdateAccumulatorVertical >= LogicalOffsetUpdateDistanceThreshold)
         {
-            _logicalOffsetUpdateAccumulator = 0;
+            _logicalOffsetUpdateAccumulatorVertical = 0;
             ScrollToVerticalOffset(_currentVisualOffsetVertical);
-            ScrollToHorizontalOffset(_currentVisualOffsetHorizontal);
+            _lastLogicalSyncVertical = _currentVisualOffsetVertical;
         }
 
-        _visualDeltaVertical = _currentVisualOffsetVertical - _logicalOffsetVertical;
-        _transform!.Y = -_visualDeltaVertical;
-        _PART_VerticalScrollBar?.Value = _currentVisualOffsetVertical;
+        if (_logicalOffsetUpdateAccumulatorHorizontal >= LogicalOffsetUpdateDistanceThreshold)
+        {
+            _logicalOffsetUpdateAccumulatorHorizontal = 0;
+            ScrollToHorizontalOffset(_currentVisualOffsetHorizontal);
+            _lastLogicalSyncHorizontal = _currentVisualOffsetHorizontal;
+        }
 
-        _visualDeltaHorizontal = _currentVisualOffsetHorizontal - _logicalOffsetHorizontal;
-        _transform!.X = -_visualDeltaHorizontal;
-        _PART_HorizontalScrollBar?.Value = _currentVisualOffsetHorizontal;
+        _visualDeltaVertical = _logicalOffsetVertical - _currentVisualOffsetVertical;
+        if (Math.Abs(_visualDeltaVertical - _lastRenderedOffsetVertical) >= VisualUpdateStepThreshold)
+        {
+            _transform!.Y = _lastRenderedOffsetVertical = _visualDeltaVertical;
+            _PART_VerticalScrollBar?.Value = _currentVisualOffsetVertical;
+        }
+
+        _visualDeltaHorizontal =  _logicalOffsetHorizontal - _currentVisualOffsetHorizontal;
+        if (Math.Abs(_visualDeltaHorizontal - _lastRenderedOffsetHorizontal) >= VisualUpdateStepThreshold)
+        {
+            _transform!.X = _lastRenderedOffsetHorizontal = _visualDeltaHorizontal;
+            _PART_HorizontalScrollBar?.Value = _currentVisualOffsetHorizontal;
+        }
     }
 
     #endregion

@@ -36,7 +36,7 @@
                                 SnapsToDevicePixels="true">
                             <fluent:SmoothScrollViewer Padding="{TemplateBinding Padding}" Focusable="false">
                                 <fluent:SmoothScrollViewer.Physics>
-                                    <fluent:ExponentialScrollPhysics />
+                                    <fluent:DefaultScrollPhysics />
                                 </fluent:SmoothScrollViewer.Physics>
                                 <ItemsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                             </fluent:SmoothScrollViewer>
