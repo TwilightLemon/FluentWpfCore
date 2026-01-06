@@ -12,7 +12,18 @@ using System.Windows.Media;
 
 namespace FluentWpfCore.Controls;
 
-/// <inheritdoc/>
+/// <summary>
+/// A ScrollViewer with smooth, fluid scrolling animations supporting mouse wheel, touchpad, and touch input.
+/// 平滑滚动 ScrollViewer，支持鼠标滚轮、触控板和触摸输入的流畅滚动动画。
+/// </summary>
+/// <remarks>
+/// This control provides enhanced scrolling behavior with customizable physics models,
+/// support for both horizontal and vertical scrolling, and smooth animations.
+/// Performance is optimized using CompositionTarget.Rendering for frame-rate independent physics.
+/// 此控件提供增强的滚动行为，具有可自定义的物理模型、
+/// 支持横向和纵向滚动以及平滑动画。
+/// 性能通过使用 CompositionTarget.Rendering 实现与帧率无关的物理模拟而得到优化。
+/// </remarks>
 public class SmoothScrollViewer : ScrollViewer
 {
     private const double LogicalOffsetUpdateInterval = 1.0 / 24.0; // 24Hz for logical offset updates
@@ -38,6 +49,17 @@ public class SmoothScrollViewer : ScrollViewer
     private IScrollPhysics _verticalScrollPhysics = new DefaultScrollPhysics();
     private IScrollPhysics _horizontalScrollPhysics = new DefaultScrollPhysics();
 
+    /// <summary>
+    /// Gets or sets the scroll physics model that controls the scrolling animation behavior.
+    /// 获取或设置控制滚动动画行为的滚动物理模型。
+    /// </summary>
+    /// <remarks>
+    /// The physics model determines how the scrolling decelerates and stops.
+    /// Built-in implementations include DefaultScrollPhysics and ExponentialScrollPhysics.
+    /// 物理模型决定滚动如何减速和停止。
+    /// 内置实现包括 DefaultScrollPhysics 和 ExponentialScrollPhysics。
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">Thrown when value is null. 当值为 null 时引发。</exception>
     public IScrollPhysics Physics
     {
         get => _verticalScrollPhysics;
@@ -384,6 +406,10 @@ public class SmoothScrollViewer : ScrollViewer
 
     #region Helpers & Properties
 
+    /// <summary>
+    /// Gets a value indicating whether the control can scroll vertically.
+    /// 获取一个值，指示控件是否可以垂直滚动。
+    /// </summary>
     public bool CanScrollVertical
     {
         get
@@ -397,6 +423,10 @@ public class SmoothScrollViewer : ScrollViewer
         }
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the control can scroll horizontally.
+    /// 获取一个值，指示控件是否可以水平滚动。
+    /// </summary>
     public bool CanScrollHorizontal
     {
         get
@@ -410,6 +440,10 @@ public class SmoothScrollViewer : ScrollViewer
         }
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the control can scroll up.
+    /// 获取一个值，指示控件是否可以向上滚动。
+    /// </summary>
     public bool CanScrollUp
     {
         get
@@ -423,6 +457,10 @@ public class SmoothScrollViewer : ScrollViewer
         }
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the control can scroll down.
+    /// 获取一个值，指示控件是否可以向下滚动。
+    /// </summary>
     public bool CanScrollDown
     {
         get
@@ -436,6 +474,10 @@ public class SmoothScrollViewer : ScrollViewer
         }
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the control can scroll left.
+    /// 获取一个值，指示控件是否可以向左滚动。
+    /// </summary>
     public bool CanScrollLeft
     {
         get
@@ -449,6 +491,10 @@ public class SmoothScrollViewer : ScrollViewer
         }
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the control can scroll right.
+    /// 获取一个值，指示控件是否可以向右滚动。
+    /// </summary>
     public bool CanScrollRight
     {
         get
@@ -464,13 +510,20 @@ public class SmoothScrollViewer : ScrollViewer
 
 
 
+    /// <summary>
+    /// Gets or sets a value indicating whether smooth manipulation (touch scrolling) is enabled.
+    /// 获取或设置一个值，指示是否启用平滑操作（触摸滚动）。
+    /// </summary>
     public bool IsEnableSmoothManipulating
     {
         get { return (bool)GetValue(IsEnableSmoothManipulatingProperty); }
         set { SetValue(IsEnableSmoothManipulatingProperty, value); }
     }
 
-    // Using a DependencyProperty as the backing store for IsEnableSmoothManipulating.  This enables animation, styling, binding, etc...
+    /// <summary>
+    /// Identifies the <see cref="IsEnableSmoothManipulating"/> dependency property.
+    /// 标识 <see cref="IsEnableSmoothManipulating"/> 依赖属性。
+    /// </summary>
     public static readonly DependencyProperty IsEnableSmoothManipulatingProperty =
         DependencyProperty.Register(nameof(IsEnableSmoothManipulating), typeof(bool), typeof(SmoothScrollViewer), new PropertyMetadata(false,OnIsEnableSmoothManipulatingChanged));
 
@@ -482,12 +535,24 @@ public class SmoothScrollViewer : ScrollViewer
         }
     }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether smooth scrolling is enabled.
+    /// 获取或设置一个值，指示是否启用平滑滚动。
+    /// </summary>
+    /// <remarks>
+    /// When false, the control falls back to standard ScrollViewer behavior.
+    /// 为 false 时，控件回退到标准 ScrollViewer 行为。
+    /// </remarks>
     public bool IsEnableSmoothScrolling
     {
         get { return (bool)GetValue(IsEnableSmoothScrollingProperty); }
         set { SetValue(IsEnableSmoothScrollingProperty, value); }
     }
 
+    /// <summary>
+    /// Identifies the <see cref="IsEnableSmoothScrolling"/> dependency property.
+    /// 标识 <see cref="IsEnableSmoothScrolling"/> 依赖属性。
+    /// </summary>
     public static readonly DependencyProperty IsEnableSmoothScrollingProperty =
         DependencyProperty.Register(nameof(IsEnableSmoothScrolling), typeof(bool), typeof(SmoothScrollViewer), new PropertyMetadata(true, OnIsEnableSmoothScrollingChanged));
 
@@ -503,21 +568,37 @@ public class SmoothScrollViewer : ScrollViewer
         }
     }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the preferred scroll orientation can be toggled by holding the Shift key.
+    /// 获取或设置一个值，指示是否可以通过按住 Shift 键切换首选滚动方向。
+    /// </summary>
     public bool AllowTogglePreferredScrollOrientationByShiftKey
     {
         get { return (bool)GetValue(AllowTogglePreferredScrollOrientationByShiftKeyProperty); }
         set { SetValue(AllowTogglePreferredScrollOrientationByShiftKeyProperty, value); }
     }
 
+    /// <summary>
+    /// Gets or sets the preferred scroll orientation (Vertical or Horizontal).
+    /// 获取或设置首选滚动方向（垂直或水平）。
+    /// </summary>
     public Orientation PreferredScrollOrientation
     {
         get { return (Orientation)GetValue(PreferredScrollOrientationProperty); }
         set { SetValue(PreferredScrollOrientationProperty, value); }
     }
 
+    /// <summary>
+    /// Identifies the <see cref="AllowTogglePreferredScrollOrientationByShiftKey"/> dependency property.
+    /// 标识 <see cref="AllowTogglePreferredScrollOrientationByShiftKey"/> 依赖属性。
+    /// </summary>
     public static readonly DependencyProperty AllowTogglePreferredScrollOrientationByShiftKeyProperty =
         DependencyProperty.Register(nameof(AllowTogglePreferredScrollOrientationByShiftKey), typeof(bool), typeof(SmoothScrollViewer), new FrameworkPropertyMetadata(true));
 
+    /// <summary>
+    /// Identifies the <see cref="PreferredScrollOrientation"/> dependency property.
+    /// 标识 <see cref="PreferredScrollOrientation"/> 依赖属性。
+    /// </summary>
     public static readonly DependencyProperty PreferredScrollOrientationProperty =
         DependencyProperty.Register(nameof(PreferredScrollOrientation), typeof(Orientation), typeof(SmoothScrollViewer), new FrameworkPropertyMetadata(Orientation.Vertical));
 
