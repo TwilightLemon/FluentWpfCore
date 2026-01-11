@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FluentWpfCore\FluentWpfCore.csproj" />
+    <ProjectReference Include="..\..\FluentWpfCore\FluentWpfCore.csproj" />
   </ItemGroup>
 
 </Project>
