@@ -83,8 +83,6 @@ public class SmoothScrollViewer : ScrollViewer
     {
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
-
-        CacheMode = new BitmapCache() { SnapsToDevicePixels = true};
     }
 
     #region Initialization

@@ -48,23 +48,6 @@
 - .NET 6.0 Windows
 - .NET Framework 4.5 ~ 4.8
 
-## 📦 安装
-
-### NuGet 包管理器
-```powershell
-Install-Package FluentWpfCore
-```
-
-### .NET CLI
-```bash
-dotnet add package FluentWpfCore
-```
-
-### PackageReference
-```xml
-<PackageReference Include="FluentWpfCore" Version="1.0.0" />
-```
-
 ## 📖 使用指南
 
 ### 窗口特效

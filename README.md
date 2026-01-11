@@ -48,23 +48,6 @@ A WPF library providing core Fluent Design controls, materials, and visual effec
 - .NET 6.0 Windows
 - .NET Framework 4.5 ~ 4.8
 
-## 📦 Installation
-
-### NuGet Package Manager
-```powershell
-Install-Package FluentWpfCore
-```
-
-### .NET CLI
-```powershell
-dotnet add package FluentWpfCore
-```
-
-### PackageReference
-```xml
-<PackageReference Include="FluentWpfCore" Version="1.0.0" />
-```
-
 ## 📖 Usage Guide
 
 ### Window Materials
