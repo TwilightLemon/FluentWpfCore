@@ -48,23 +48,6 @@ A WPF library providing core Fluent Design controls, materials, and visual effec
 - .NET 6.0 Windows
 - .NET Framework 4.5 ~ 4.8
 
-## 📦 Installation
-
-### NuGet Package Manager
-```powershell
-Install-Package FluentWpfCore
-```
-
-### .NET CLI
-```powershell
-dotnet add package FluentWpfCore
-```
-
-### PackageReference
-```xml
-<PackageReference Include="FluentWpfCore" Version="1.0.0" />
-```
-
 ## 📖 Usage Guide
 
 ### Window Materials
@@ -265,7 +248,10 @@ If you need non-solid backgrounds, keep the popup background transparent and pro
 
 ### SmoothScrollViewer
 
-Provides a smooth scrolling experience with customizable physics models and support for mouse wheel, touchpad, touch and pen input:
+A smooth scrolling ScrollViewer that enhances the native WPF control.
+- Supports mouse wheel and touchpad input
+- Supports horizontal and vertical scrolling, toggleable with Shift key; native touchpad horizontal scrolling supported
+- Customizable physics models for different scrolling animation effects
 
 ```xml
 <fluent:SmoothScrollViewer>
@@ -284,20 +270,44 @@ Provides a smooth scrolling experience with customizable physics models and supp
 | `AllowTogglePreferredScrollOrientationByShiftKey` | `bool` | `true` | Allow toggling scroll orientation by holding Shift key |
 | `Physics` | `IScrollPhysics` | `DefaultScrollPhysics` | Scrolling physics model that controls animation behavior |
 
-#### Scroll Physics Model
+#### Scroll Physics Models
 
-`SmoothScrollViewer` uses a pluggable physics model through the `IScrollPhysics` interface, allowing you to customize scrolling behavior. The default implementation is `DefaultScrollPhysics`, which provides two distinct modes:
+`SmoothScrollViewer` uses a pluggable physics model through the `IScrollPhysics` interface, allowing you to customize scrolling behavior. Two built-in implementations are provided:
 
-##### Precision Mode (Touchpad)
-For touchpad/touch input, uses smooth interpolation to follow the target offset:
-- **LerpFactor** (`double`, default: `0.5`, range: `0~1`) — Interpolation coefficient; higher values make scrolling reach the target faster
+##### DefaultScrollPhysics (Velocity-based)
 
-##### Momentum Mode (Mouse Wheel)
-For mouse wheel input, uses velocity-based physics with friction:
-- **MinVelocityFactor** (`double`, default: `1.2`, range: `1~2`) — Initial velocity multiplier; higher values result in faster initial speed and longer scroll distance
-- **Friction** (`double`, default: `0.92`, range: `0~1`) — Velocity decay coefficient; lower values make scrolling stop faster
+Uses velocity decay with friction for a natural momentum feel. The total scroll distance equals the input delta.
 
-The physics model automatically detects input type and switches between modes. Velocity factor dynamically adjusts based on scroll interval timing for optimal feel.
+| Property | Type | Default | Range | Description |
+|----------|------|---------|-------|-------------|
+| `Smoothness` | `double` | `0.72` | `0~1` | Scroll smoothness; higher values result in smoother, longer-lasting scrolling; lower values stop faster |
+
+```xml
+<fluent:SmoothScrollViewer>
+    <fluent:SmoothScrollViewer.Physics>
+        <fluent:DefaultScrollPhysics Smoothness="0.8" />
+    </fluent:SmoothScrollViewer.Physics>
+    <!-- content -->
+</fluent:SmoothScrollViewer>
+```
+
+##### ExponentialScrollPhysics (Exponential easing)
+
+Uses exponential decay function for smooth scrolling with a "fast start, slow end" feel.
+
+| Property | Type | Default | Range | Description |
+|----------|------|---------|-------|-------------|
+| `DecayRate` | `double` | `8.0` | `1~20` | Decay rate; higher values reach target position faster |
+| `StopThreshold` | `double` | `0.5` | `0.1~5` | Stop threshold; scrolling stops when remaining distance is below this value |
+
+```xml
+<fluent:SmoothScrollViewer>
+    <fluent:SmoothScrollViewer.Physics>
+        <fluent:ExponentialScrollPhysics DecayRate="10" StopThreshold="0.5" />
+    </fluent:SmoothScrollViewer.Physics>
+    <!-- content -->
+</fluent:SmoothScrollViewer>
+```
 
 #### Usage Examples
 
@@ -309,20 +319,6 @@ The physics model automatically detects input type and switches between modes. V
         <TextBlock Text="Item 2" Height="100" />
         <TextBlock Text="Item 3" Height="100" />
         <!-- more items -->
-    </StackPanel>
-</fluent:SmoothScrollViewer>
-```
-
-##### Customize scroll physics
-```xml
-<fluent:SmoothScrollViewer>
-    <fluent:SmoothScrollViewer.Physics>
-        <fluent:DefaultScrollPhysics MinVelocityFactor="1.5"
-                                     Friction="0.85"
-                                     LerpFactor="0.6" />
-    </fluent:SmoothScrollViewer.Physics>
-    <StackPanel>
-        <!-- content -->
     </StackPanel>
 </fluent:SmoothScrollViewer>
 ```
@@ -389,17 +385,15 @@ public class CustomScrollPhysics : IScrollPhysics
 {
     public bool IsStable { get; private set; }
     
-    public void OnScroll(double currentOffset, double delta, bool isPrecision, 
-                         double minOffset, double maxOffset, int timeIntervalMs)
+    public void OnScroll(double delta)
     {
-        // Handle scroll input
+        // Handle scroll input, delta is the scroll amount
         IsStable = false;
     }
     
-    public double Update(double currentOffset, double dt, 
-                         double minOffset, double maxOffset)
+    public double Update(double currentOffset, double dt)
     {
-        // Calculate and return new offset
+        // Calculate and return new offset based on current offset and delta time
         // Set IsStable = true when animation should stop
         return newOffset;
     }

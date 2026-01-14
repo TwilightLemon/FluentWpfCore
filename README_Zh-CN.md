@@ -9,7 +9,7 @@
 
 ## ✨ 特性
 
-### 🪟 窗口特效系统
+### 🪟 窗体特效系统
 - **多材质支持** - Acrylic、Mica、MicaAlt 等现代窗口材质
 - **灵活组合** - 材质效果 + 圆角 + 阴影 + DWM 动画自由组合
 - **跨版本兼容** - 支持 Windows 10 旧版 Composition API 和 Windows 11 System Backdrop API
@@ -47,23 +47,6 @@
 - .NET 8.0 Windows
 - .NET 6.0 Windows
 - .NET Framework 4.5 ~ 4.8
-
-## 📦 安装
-
-### NuGet 包管理器
-```powershell
-Install-Package FluentWpfCore
-```
-
-### .NET CLI
-```bash
-dotnet add package FluentWpfCore
-```
-
-### PackageReference
-```xml
-<PackageReference Include="FluentWpfCore" Version="1.0.0" />
-```
 
 ## 📖 使用指南
 
@@ -263,7 +246,10 @@ FluentPopup 是一个增强的弹出窗口控件。默认带有亚克力背景�
 
 ### SmoothScrollViewer
 
-提供平滑流畅的滚动体验，支持自定义物理模型，兼容鼠标滚轮、触控板：
+平滑滚动ScrollViewer，对WPF原生控件进行增强。
+- 支持鼠标滚轮和触控板输入
+- 支持横向和纵向滚动，可通过Shift键切换，原生支持触控板横向滚动
+- 可自定义物理模型，实现不同的滚动动画效果
 
 ```xml
 <fluent:SmoothScrollViewer>
@@ -284,18 +270,42 @@ FluentPopup 是一个增强的弹出窗口控件。默认带有亚克力背景�
 
 #### 滚动物理模型
 
-`SmoothScrollViewer` 通过 `IScrollPhysics` 接口使用可插拔的物理模型，允许你自定义滚动行为。默认实现是 `DefaultScrollPhysics`，它提供两种不同的模式：
+`SmoothScrollViewer` 通过 `IScrollPhysics` 接口使用可插拔的物理模型，允许你自定义滚动行为。内置提供两种实现：
 
-##### 精确模式（触控板）
-用于触控板/触摸输入，使用平滑插值来跟随目标偏移量：
-- **LerpFactor**（`double`，默认值：`0.5`，范围：`0~1`）— 插值系数；数值越大，滚动越快到达目标位置
+##### DefaultScrollPhysics（基于速度衰减）
 
-##### 惯性模式（鼠标滚轮）
-用于鼠标滚轮输入，使用基于速度的物理引擎并带有摩擦力：
-- **MinVelocityFactor**（`double`，默认值：`1.2`，范围：`1~2`）— 起始速度倍数；数值越大，起始速度越快，滚动距离越长
-- **Friction**（`double`，默认值：`0.92`，范围：`0~1`）— 速度衰减系数；数值越小，越快停下来
+使用速度衰减和摩擦力实现自然的惯性滚动效果。最终滚动距离等于输入的 delta 值。
 
-物理模型会自动检测输入类型并在两种模式之间切换。速度因子会根据滚动间隔时间动态调整，以获得最佳手感。
+| 属性 | 类型 | 默认值 | 范围 | 说明 |
+|------|------|--------|------|------|
+| `Smoothness` | `double` | `0.72` | `0~1` | 滚动平滑度；数值越大，滚动越平滑持久；数值越小，越快停下来 |
+
+```xml
+<fluent:SmoothScrollViewer>
+    <fluent:SmoothScrollViewer.Physics>
+        <fluent:DefaultScrollPhysics Smoothness="0.8" />
+    </fluent:SmoothScrollViewer.Physics>
+    <!-- 内容 -->
+</fluent:SmoothScrollViewer>
+```
+
+##### ExponentialScrollPhysics（指数缓动）
+
+使用指数衰减函数实现平滑滚动，具有"开始快、结束慢"的自然减速感。
+
+| 属性 | 类型 | 默认值 | 范围 | 说明 |
+|------|------|--------|------|------|
+| `DecayRate` | `double` | `8.0` | `1~20` | 衰减速率；数值越大，越快到达目标位置 |
+| `StopThreshold` | `double` | `0.5` | `0.1~5` | 停止阈值；剩余距离小于此值时停止滚动 |
+
+```xml
+<fluent:SmoothScrollViewer>
+    <fluent:SmoothScrollViewer.Physics>
+        <fluent:ExponentialScrollPhysics DecayRate="10" StopThreshold="0.5" />
+    </fluent:SmoothScrollViewer.Physics>
+    <!-- 内容 -->
+</fluent:SmoothScrollViewer>
+```
 
 #### 使用示例
 
@@ -307,20 +317,6 @@ FluentPopup 是一个增强的弹出窗口控件。默认带有亚克力背景�
         <TextBlock Text="Item 2" Height="100" />
         <TextBlock Text="Item 3" Height="100" />
         <!-- 更多项目 -->
-    </StackPanel>
-</fluent:SmoothScrollViewer>
-```
-
-##### 自定义滚动物理参数
-```xml
-<fluent:SmoothScrollViewer>
-    <fluent:SmoothScrollViewer.Physics>
-        <fluent:DefaultScrollPhysics MinVelocityFactor="1.5"
-                                     Friction="0.85"
-                                     LerpFactor="0.6" />
-    </fluent:SmoothScrollViewer.Physics>
-    <StackPanel>
-        <!-- 内容 -->
     </StackPanel>
 </fluent:SmoothScrollViewer>
 ```
@@ -379,7 +375,7 @@ FluentPopup 是一个增强的弹出窗口控件。默认带有亚克力背景�
 </fluent:SmoothScrollViewer>
 ```
 
-##### 自定义物理实现
+##### 自定义物理模型实现
 你可以通过实现 `IScrollPhysics` 接口来创建自己的物理模型：
 
 ```csharp
@@ -387,17 +383,15 @@ public class CustomScrollPhysics : IScrollPhysics
 {
     public bool IsStable { get; private set; }
     
-    public void OnScroll(double currentOffset, double delta, bool isPrecision, 
-                         double minOffset, double maxOffset, int timeIntervalMs)
+    public void OnScroll(double delta)
     {
-        // 处理滚动输入
+        // 处理滚动输入，delta 为滚动量
         IsStable = false;
     }
     
-    public double Update(double currentOffset, double dt, 
-                         double minOffset, double maxOffset)
+    public double Update(double currentOffset, double dt)
     {
-        // 计算并返回新的偏移量
+        // 根据当前偏移量和时间增量计算并返回新的偏移量
         // 当动画应该停止时设置 IsStable = true
         return newOffset;
     }
@@ -542,3 +536,4 @@ Or simply:
 ---
 
 Made with ❤️ by [TwilightLemon](https://github.com/TwilightLemon)
+

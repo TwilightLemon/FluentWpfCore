@@ -126,7 +126,11 @@
                                    Grid.Column="1"
                                    Margin="0,36,0,0"
                                    HorizontalScrollBarVisibility="Auto"
-                                   IsEnableSmoothScrolling="True">
+                                   IsEnableSmoothScrolling="True"
+                                   IsEnableSmoothManipulating="True">
+            <fluent:SmoothScrollViewer.Physics>
+                <fluent:DefaultScrollPhysics/>
+            </fluent:SmoothScrollViewer.Physics>
             <StackPanel x:Name="panel"
                         Width="800"
                         Orientation="Vertical" />

@@ -1,117 +1,134 @@
 ﻿using FluentWpfCore.Helpers;
 using System.ComponentModel;
+using System.Windows.Input;
 
 namespace FluentWpfCore.ScrollPhysics;
 
+/// <summary>
+/// Default scroll physics implementation using velocity-based decay with friction.
+/// 默认滚动物理实现，使用基于速度的摩擦衰减。
+/// </summary>
+/// <remarks>
+/// This physics model uses velocity decay with configurable friction for natural momentum scrolling.
+/// The total scroll distance equals the input delta, providing predictable scrolling behavior.
+/// 此物理模型使用可配置摩擦力的速度衰减实现自然的惯性滚动。
+/// 总滚动距离等于输入的 delta 值，提供可预测的滚动行为。
+/// </remarks>
 public class DefaultScrollPhysics : IScrollPhysics
 {
+    // Friction coefficient valid range: 0.85 ~ 0.96
+    // 摩擦系数的有效范围：0.85 ~ 0.96
+    // Smoothness 0 -> Friction 0.85 (stops quickly / 快速停止)
+    // Smoothness 1 -> Friction 0.96 (smooth deceleration / 平滑减速)
+    private const double MinFriction = 0.85;
+    private const double MaxFriction = 0.96;
+    private const double PreciseModeFriction = 0.88;
+
     /// <summary>
-    /// 缓动模型的叠加速度力度，数值越大，滚动起始速率越快，滚得越远
+    /// Calculates the actual friction coefficient based on Smoothness.
+    /// 根据 Smoothness 计算实际的摩擦系数。
     /// </summary>
-    [Category("Scroll Physics")]
-    [Description("[已弃用] 缓动模型的叠加速度力度，数值越大，滚动起始速率越快，滚得越远。取值1~5")]
-    [Obsolete("该参数不再有效，如需修改起始速率倍速因子请使用MinVelocityFactor")]
-    public double VelocityFactor { get; set; } = 1.5;
+    private double _friction = 0d;
+    private double _smoothness = 0.72;
+    private bool _isPreciseMode = false;
 
-    private double _minVelocityFactor = 1.2, _complementValue = 1.3;
-    private const double MaxVelocityFactor = 2.5;
-
-    [Category("Scroll Physics")]
-    [Description("缓动模型的起始力度，数值越大，滚动起始速率越快，滚得越远。一般取值1~2")]
-    public double MinVelocityFactor
+    public DefaultScrollPhysics()
     {
-        get => _minVelocityFactor;
+        InitParameters();
+    }
+
+    private void InitParameters()
+    {
+        _friction = MinFriction + (MaxFriction - MinFriction) * _smoothness;
+    }
+
+    /// <summary>
+    /// Gets or sets the scroll smoothness. Higher values result in smoother, longer-lasting scrolling.
+    /// 获取或设置滚动平滑度。数值越大，滚动越平滑持久。
+    /// </summary>
+    /// <remarks>
+    /// Valid range: 0 to 1. 0 = stops quickly, 1 = very smooth deceleration.
+    /// 有效范围：0 到 1。0 = 快速停止，1 = 非常平滑的减速。
+    /// </remarks>
+    [Category("Scroll Physics")]
+    [Description("滚动平滑度，数值越大，滚动越平滑持久；数值越小，越快停下来。取值0~1")]
+    public double Smoothness
+    {
+        get => _smoothness;
         set
         {
-            _minVelocityFactor = value;
-            _complementValue = MaxVelocityFactor - value;
+#if NET5_0_OR_GREATER
+            _smoothness = Math.Clamp(value, 0.0, 1.0);
+#else
+            _smoothness = MathExtension.Clamp(value, 0.0, 1.0);
+#endif
+            InitParameters();
         }
     }
 
     /// <summary>
-    /// 缓动模型的速度衰减系数，数值越小，越快停下来
+    /// Gets or sets a value indicating whether precise mode is enabled.
+    /// 获取或设置一个值，指示是否启用精确模式。
     /// </summary>
-    [Category("Scroll Physics")]
-    [Description("缓动模型的速度衰减系数，数值越小，越快停下来。取值0~1")]
-    public double Friction { get; set; } = 0.92;
+    public bool IsPreciseMode
+    {
+        get => _isPreciseMode;
+        set => _isPreciseMode = value;
+    }
 
     /// <summary>
-    /// 精确模型的插值系数，数值越大，滚动越快接近目标
+    /// Reference frame time used for normalization (independent of actual display refresh rate).
+    /// 参考帧时间（用于归一化计算，与实际显示器帧率无关）。
     /// </summary>
-    [Category("Scroll Physics")]
-    [Description("精确模型的插值系数，数值越大，滚动越快接近目标。取值0~1")]
-    public double LerpFactor { get; set; } = 0.5;
-
-    private const double TargetFrameTime = 1.0 / 144.0;
+    /// <remarks>
+    /// Through timeFactor = dt / ReferenceFrameTime, achieves frame-rate independent physics simulation.
+    /// 通过 timeFactor = dt / ReferenceFrameTime 实现帧率无关的物理模拟。
+    /// </remarks>
+    private const double ReferenceFrameTime = 1.0 / 144.0;
 
     private double _velocity;
-    private double _targetOffset;
-    private bool _isPrecision;
     private bool _isStable = true;
 
+    /// <summary>
+    /// Gets a value indicating whether the scrolling has stabilized.
+    /// 获取一个值，指示滚动是否已稳定。
+    /// </summary>
     public bool IsStable => _isStable;
 
-    public void OnScroll(double currentOffset, double delta, bool isPrecision, double minOffset, double maxOffset, int timeIntervalMs)
+    /// <inheritdoc/>
+    public void OnScroll(double delta)
     {
-        _isPrecision = isPrecision;
         _isStable = false;
-        if (isPrecision)
-        {
-            _velocity = 0;
-#if NET5_0_OR_GREATER
-            _targetOffset = Math.Clamp(currentOffset - delta, minOffset, maxOffset);
-#else
-            _targetOffset = MathExtension.Clamp(currentOffset - delta, minOffset, maxOffset);
-#endif
-        }
-        else
-        {
-            double vf = GetVelocityFactor(timeIntervalMs);
-            _velocity += -delta * vf;
-        }
+        // 使用目标位移模式：将 delta 累加到目标位置
+        // 初始速度设为 -delta，配合位移系数 (1 - Friction)，保证总位移等于 delta
+        // 总位移 = v0 * k * (1 + f + f² + ...) = v0 * k / (1 - f)
+        // 当 k = (1 - f) 时，总位移 = v0 = -delta，即向上滚动 delta
+        _velocity -= delta;
     }
 
-    private double GetVelocityFactor(int ms)
-    {
-        // vf = (MaxVelocityFactor - minVelocityFactor) * e^(−(ms / 20)) + minVelocityFactor
-        return _complementValue * Math.Exp(-(ms / 20.0)) + _minVelocityFactor;
-    }
-
-    public double Update(double currentOffset, double dt, double minOffset, double maxOffset)
+    /// <inheritdoc/>
+    public double Update(double currentOffset, double dt)
     {
         if (_isStable) return currentOffset;
 
-        double timeFactor = dt / TargetFrameTime;
+        // 帧率无关的时间因子：无论实际帧率如何，物理效果保持一致
+        double timeFactor = dt / ReferenceFrameTime;
         double newOffset = currentOffset;
 
-        if (_isPrecision)
-        {
-            double lerp = 1.0 - Math.Pow(1.0 - LerpFactor, timeFactor);
-            newOffset = currentOffset + (_targetOffset - currentOffset) * lerp;
 
-            if (Math.Abs(_targetOffset - newOffset) < 0.5)
-            {
-                newOffset = _targetOffset;
-                _isStable = true;
-            }
+        if (Math.Abs(_velocity) < 0.01)
+        {
+            _velocity = 0;
+            _isStable = true;
         }
         else
         {
-            if (Math.Abs(_velocity) < 2)
-            {
-                _velocity = 0;
-                _isStable = true;
-            }
-            else
-            {
-                _velocity *= Math.Pow(Friction, timeFactor);
-                double delta = _velocity * (timeFactor / 24.0);
-#if NET5_0_OR_GREATER
-                newOffset = Math.Clamp(currentOffset + delta, minOffset, maxOffset);
-#else
-                newOffset = MathExtension.Clamp(currentOffset + delta, minOffset, maxOffset);
-#endif
-            }
+            // 位移系数 = (1 - Friction)，保证总位移等于初始速度
+            // 使用帧时间因子调整摩擦力和位移，实现帧率无关
+            double f = Math.Pow(_isPreciseMode? PreciseModeFriction : _friction, timeFactor);
+            double displacement = _velocity * (1 - f);
+            _velocity -= displacement;
+            newOffset = currentOffset + displacement;
         }
 
         return newOffset;

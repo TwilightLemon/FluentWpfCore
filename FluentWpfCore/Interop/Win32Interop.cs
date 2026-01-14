@@ -3,7 +3,8 @@
 namespace FluentWpfCore.Interop;
 
 /// <summary>
-/// Win32 API 互操作声明
+/// Win32 API interop declarations for window manipulation and DWM operations.
+/// Win32 API 互操作声明，用于窗口操作和 DWM 操作。
 /// </summary>
 internal static partial class Win32Interop
 {
@@ -107,6 +108,10 @@ internal static partial class Win32Interop
     internal static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 #endif
 
+    /// <summary>
+    /// Accent state for window composition effects.
+    /// 窗口合成效果的强调状态。
+    /// </summary>
     internal enum AccentState
     {
         ACCENT_DISABLED = 0,
@@ -117,6 +122,10 @@ internal static partial class Win32Interop
         ACCENT_INVALID_STATE = 5,
     }
 
+    /// <summary>
+    /// Accent policy structure for window composition.
+    /// 窗口合成的强调策略结构。
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     internal struct AccentPolicy
     {
@@ -126,11 +135,19 @@ internal static partial class Win32Interop
         public int AnimationId;
     }
 
+    /// <summary>
+    /// Window composition attribute types.
+    /// 窗口合成属性类型。
+    /// </summary>
     internal enum WindowCompositionAttribute
     {
         WCA_ACCENT_POLICY = 19,
     }
 
+    /// <summary>
+    /// Structure for setting window composition attributes.
+    /// 设置窗口合成属性的结构。
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     internal struct WindowCompositionAttributeData
     {
@@ -157,6 +174,10 @@ internal static partial class Win32Interop
     internal static extern int DwmSetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE dwAttribute, ref int pvAttribute, int cbAttribute);
 #endif
 
+    /// <summary>
+    /// DWM window attribute types.
+    /// DWM 窗口属性类型。
+    /// </summary>
     [Flags]
     internal enum DWMWINDOWATTRIBUTE
     {
@@ -165,6 +186,10 @@ internal static partial class Win32Interop
         DWMWA_SYSTEMBACKDROP_TYPE = 38,
     }
 
+    /// <summary>
+    /// Margin structure for DWM frame extension.
+    /// DWM 边框扩展的边距结构。
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     internal struct Margins
     {

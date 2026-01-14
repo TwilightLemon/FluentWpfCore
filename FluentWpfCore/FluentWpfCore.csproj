@@ -21,7 +21,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>wpf;fluent;fluent-design;acrylic;mica;ui;controls;material;windows11;dwm;backdrop</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageReleaseNotes>Optimize SmoothScrollViewer performance, allowing custom model parameters.</PackageReleaseNotes>
+		<PackageReleaseNotes>Optimize SmoothScrollViewer performance; fix WindowMaterial effects on Windows 10.</PackageReleaseNotes>
 		<PackageIcon>icon.png</PackageIcon>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
