@@ -29,7 +29,7 @@ public class DefaultScrollPhysics : IScrollPhysics
     /// 根据 Smoothness 计算实际的摩擦系数。
     /// </summary>
     private double _friction = 0d;
-    private double _smoothness = 0.72;
+    private double _smoothness = 0.78;
     private bool _isPreciseMode = false;
 
     public DefaultScrollPhysics()
@@ -77,6 +77,18 @@ public class DefaultScrollPhysics : IScrollPhysics
     }
 
     /// <summary>
+    /// Gets or sets the stop threshold. Scrolling stops when the remaining distance is below this value.
+    /// 获取或设置停止阈值。当剩余距离小于此值时停止滚动。
+    /// </summary>
+    /// <remarks>
+    /// Valid range: 0.1 to 5.
+    /// 有效范围：0.1 到 5。
+    /// </remarks>
+    [Category("Scroll Physics")]
+    [Description("停止阈值，当剩余距离小于此值时停止滚动。取值0.1~5")]
+    public double StopThreshold { get; set; } = 0.5;
+
+    /// <summary>
     /// Reference frame time used for normalization (independent of actual display refresh rate).
     /// 参考帧时间（用于归一化计算，与实际显示器帧率无关）。
     /// </summary>
@@ -116,7 +128,7 @@ public class DefaultScrollPhysics : IScrollPhysics
         double newOffset = currentOffset;
 
 
-        if (Math.Abs(_velocity) < 0.01)
+        if (Math.Abs(_velocity) < StopThreshold)
         {
             _velocity = 0;
             _isStable = true;
