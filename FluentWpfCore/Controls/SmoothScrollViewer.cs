@@ -85,6 +85,28 @@ public class SmoothScrollViewer : ScrollViewer
         Unloaded += OnUnloaded;
     }
 
+    public void AnimatedScrollToVerticalOffset(double offset, bool usePreciseMode=false)
+    {
+        if (!IsEnableSmoothScrolling) 
+        {
+            ScrollToVerticalOffset(offset);
+            return;
+        }
+        double delta = VerticalOffset - offset;
+        HandleScroll(delta, 0,usePreciseMode);
+    }
+
+    public void AnimatedScrollToHorizontalOffset(double offset, bool usePreciseMode=false)
+    {
+        if (!IsEnableSmoothScrolling) 
+        {
+            ScrollToHorizontalOffset(offset);
+            return;
+        }
+        double delta = HorizontalOffset - offset;
+        HandleScroll(0, delta,usePreciseMode);
+    }
+
     #region Initialization
 
     public override void OnApplyTemplate()
