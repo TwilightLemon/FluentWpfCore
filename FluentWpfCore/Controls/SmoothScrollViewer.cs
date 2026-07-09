@@ -27,9 +27,8 @@ public class SmoothScrollViewer : ScrollViewer
     //TODO: Add dependency properties for this threshold.
     // may affect Visualization. One of the solutions is to set VirtualizingPanel.CacheLength.
     private const double LogicalOffsetUpdateDistanceThreshold = 20.0; // Update logical offset after accumulated movement
+    private const double MaxDeltaTime = 0.2; // Cap delta time to avoid huge jumps after GC pause / app suspend
     private const int WM_MOUSEHWHEEL = 0x020E; // Horizontal mouse wheel message
-
-    private const double VisualUpdateStepThreshold = 0.1d; // Minimum visual offset change to update transform
 
     private double _logicalOffsetVertical;   // The actual ScrollViewer vertical offset
     private double _currentVisualOffsetVertical; // The target visual vertical offset (smooth)
@@ -45,11 +44,8 @@ public class SmoothScrollViewer : ScrollViewer
     private double _logicalOffsetUpdateAccumulatorVertical;
     private double _logicalOffsetUpdateAccumulatorHorizontal;
 
-    private double _lastRenderedOffsetVertical;
-    private double _lastRenderedOffsetHorizontal;
-
-    private double _lastLogicalSyncVertical;
-    private double _lastLogicalSyncHorizontal;
+    private double _previousVisualOffsetVertical;
+    private double _previousVisualOffsetHorizontal;
 
     private TranslateTransform? _transform;
     private UIElement? _content;
@@ -364,8 +360,15 @@ public class SmoothScrollViewer : ScrollViewer
         _lastTimestamp = Stopwatch.GetTimestamp();
         _logicalOffsetUpdateAccumulatorVertical = 0;
         _logicalOffsetUpdateAccumulatorHorizontal = 0;
-        _lastLogicalSyncVertical = _currentVisualOffsetVertical;
-        _lastLogicalSyncHorizontal = _currentVisualOffsetHorizontal;
+        _previousVisualOffsetVertical = _currentVisualOffsetVertical;
+        _previousVisualOffsetHorizontal = _currentVisualOffsetHorizontal;
+
+        // Clear scrollbar bindings so manual value assignment during rendering doesn't conflict
+        if (_PART_VerticalScrollBar != null)
+            BindingOperations.ClearBinding(_PART_VerticalScrollBar, ScrollBar.ValueProperty);
+        if (_PART_HorizontalScrollBar != null)
+            BindingOperations.ClearBinding(_PART_HorizontalScrollBar, ScrollBar.ValueProperty);
+
         CompositionTarget.Rendering += OnRendering;
         _isRendering = true;
         _content!.IsHitTestVisible = false;
@@ -406,17 +409,49 @@ public class SmoothScrollViewer : ScrollViewer
         double dt = (double)(now - _lastTimestamp) / Stopwatch.Frequency;
         _lastTimestamp = now;
 
-        _currentVisualOffsetVertical = MathExtension.Clamp(_verticalScrollPhysics.Update(_currentVisualOffsetVertical, dt), 0, ScrollableHeight);
-        _currentVisualOffsetHorizontal = MathExtension.Clamp(_horizontalScrollPhysics.Update(_currentVisualOffsetHorizontal, dt), 0, ScrollableWidth);
+        // Fix #2: Cap delta time to avoid huge jumps after GC pause, app suspend, or window drag
+        if (dt > MaxDeltaTime) dt = MaxDeltaTime;
 
-        if (_verticalScrollPhysics.IsStable && _horizontalScrollPhysics.IsStable)
+        bool canScrollV = ScrollableHeight > 0;
+        bool canScrollH = ScrollableWidth > 0;
+
+        // Fix #6: Only update axes that can actually scroll
+        if (canScrollV)
+        {
+            double rawVertical = _verticalScrollPhysics.Update(_currentVisualOffsetVertical, dt);
+            _currentVisualOffsetVertical = MathExtension.Clamp(rawVertical, 0, ScrollableHeight);
+        }
+
+        if (canScrollH)
+        {
+            double rawHorizontal = _horizontalScrollPhysics.Update(_currentVisualOffsetHorizontal, dt);
+            _currentVisualOffsetHorizontal = MathExtension.Clamp(rawHorizontal, 0, ScrollableWidth);
+        }
+
+        // Fix #3: Stop rendering when both axes are stable OR pinned at boundaries (clamp took effect)
+        bool verticalStable = _verticalScrollPhysics.IsStable
+                              || !canScrollV
+                              || _currentVisualOffsetVertical <= 0
+                              || _currentVisualOffsetVertical >= ScrollableHeight;
+        bool horizontalStable = _horizontalScrollPhysics.IsStable
+                                || !canScrollH
+                                || _currentVisualOffsetHorizontal <= 0
+                                || _currentVisualOffsetHorizontal >= ScrollableWidth;
+
+        if (verticalStable && horizontalStable)
         {
             StopRendering();
             return;
         }
 
-        double deltaVerticalForLogicalUpdate = Math.Abs(_currentVisualOffsetVertical - _lastLogicalSyncVertical);
-        double deltaHorizontalForLogicalUpdate = Math.Abs(_currentVisualOffsetHorizontal - _lastLogicalSyncHorizontal);
+        // Fix #1: Use incremental per-frame delta instead of cumulative distance from last sync point.
+        // Previously used |current - lastSync| each frame which accumulated quadratically,
+        // causing the effective threshold to be far smaller than intended.
+        double deltaVerticalForLogicalUpdate = Math.Abs(_currentVisualOffsetVertical - _previousVisualOffsetVertical);
+        double deltaHorizontalForLogicalUpdate = Math.Abs(_currentVisualOffsetHorizontal - _previousVisualOffsetHorizontal);
+
+        _previousVisualOffsetVertical = _currentVisualOffsetVertical;
+        _previousVisualOffsetHorizontal = _currentVisualOffsetHorizontal;
 
         _logicalOffsetUpdateAccumulatorVertical += deltaVerticalForLogicalUpdate;
         _logicalOffsetUpdateAccumulatorHorizontal += deltaHorizontalForLogicalUpdate;
@@ -425,29 +460,21 @@ public class SmoothScrollViewer : ScrollViewer
         {
             _logicalOffsetUpdateAccumulatorVertical = 0;
             ScrollToVerticalOffset(_currentVisualOffsetVertical);
-            _lastLogicalSyncVertical = _currentVisualOffsetVertical;
         }
 
         if (_logicalOffsetUpdateAccumulatorHorizontal >= LogicalOffsetUpdateDistanceThreshold)
         {
             _logicalOffsetUpdateAccumulatorHorizontal = 0;
             ScrollToHorizontalOffset(_currentVisualOffsetHorizontal);
-            _lastLogicalSyncHorizontal = _currentVisualOffsetHorizontal;
         }
 
         _visualDeltaVertical = _logicalOffsetVertical - _currentVisualOffsetVertical;
-        if (Math.Abs(_visualDeltaVertical - _lastRenderedOffsetVertical) >= VisualUpdateStepThreshold)
-        {
-            _transform!.Y = _lastRenderedOffsetVertical = _visualDeltaVertical;
-            _PART_VerticalScrollBar?.Value = _currentVisualOffsetVertical;
-        }
+        _transform!.Y = _visualDeltaVertical;
+        _PART_VerticalScrollBar!.Value = _currentVisualOffsetVertical;
 
-        _visualDeltaHorizontal =  _logicalOffsetHorizontal - _currentVisualOffsetHorizontal;
-        if (Math.Abs(_visualDeltaHorizontal - _lastRenderedOffsetHorizontal) >= VisualUpdateStepThreshold)
-        {
-            _transform!.X = _lastRenderedOffsetHorizontal = _visualDeltaHorizontal;
-            _PART_HorizontalScrollBar?.Value = _currentVisualOffsetHorizontal;
-        }
+        _visualDeltaHorizontal = _logicalOffsetHorizontal - _currentVisualOffsetHorizontal;
+        _transform!.X = _visualDeltaHorizontal;
+        _PART_HorizontalScrollBar!.Value = _currentVisualOffsetHorizontal;
     }
 
     #endregion

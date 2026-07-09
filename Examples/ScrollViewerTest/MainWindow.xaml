@@ -13,6 +13,9 @@
                                HorizontalScrollBarVisibility="Auto"
                                IsEnableSmoothManipulating="True"
                                IsEnableSmoothScrolling="True">
+        <fluent:SmoothScrollViewer.Physics>
+            <fluent:ExponentialScrollPhysics />
+        </fluent:SmoothScrollViewer.Physics>
         <VirtualizingStackPanel Margin="10"
                                 HorizontalAlignment="Left"
                                 Background="AliceBlue"

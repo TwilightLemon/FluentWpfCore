@@ -128,7 +128,7 @@ public class DefaultScrollPhysics : IScrollPhysics
         double newOffset = currentOffset;
 
 
-        if (Math.Abs(_velocity) < StopThreshold)
+        if (!_isPreciseMode&&Math.Abs(_velocity) < StopThreshold)
         {
             _velocity = 0;
             _isStable = true;

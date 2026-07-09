@@ -82,12 +82,11 @@ public class ExponentialScrollPhysics : IScrollPhysics
     {
         if (_isStable) return currentOffset;
 
-        if (Math.Abs(_remainingDistance) < StopThreshold)
+        if (!IsPreciseMode && Math.Abs(_remainingDistance) < StopThreshold)
         {
-            double finalDisplacement = _remainingDistance;
             _remainingDistance = 0;
             _isStable = true;
-            return currentOffset + finalDisplacement; // 直接到达目标
+            return currentOffset;
         }
 
         // 指数插值因子：1 - e^(-k*dt)
