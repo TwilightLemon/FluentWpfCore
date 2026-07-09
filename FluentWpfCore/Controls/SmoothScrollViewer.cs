@@ -195,6 +195,11 @@ public class SmoothScrollViewer : ScrollViewer
             _logicalOffsetHorizontal = HorizontalOffset;
             _currentVisualOffsetHorizontal = _logicalOffsetHorizontal;
             _visualDeltaHorizontal = 0;
+
+            // Reset physics state so residual velocity/distance from a previous
+            // boundary-hit doesn't corrupt the new scroll gesture.
+            _verticalScrollPhysics.Reset();
+            _horizontalScrollPhysics.Reset();
         }
 
         _verticalScrollPhysics.IsPreciseMode = isPreciseMode;

@@ -40,6 +40,18 @@ namespace FluentWpfCore.ScrollPhysics
         /// 获取或设置一个值，指示是否启用精确模式（例如，用于触摸输入）。
         /// </summary>
         bool IsPreciseMode { get; set; }
+
+        /// <summary>
+        /// Resets the internal physics state (velocity, remaining distance, etc.) to a clean initial state.
+        /// 重置内部物理状态（速度、剩余距离等）为干净的初始状态。
+        /// </summary>
+        /// <remarks>
+        /// Called when a new scroll gesture begins from a fully stopped state,
+        /// ensuring residual momentum from a previous boundary-hit doesn't corrupt new input.
+        /// 在新的滚动手势从完全停止状态开始时调用，
+        /// 确保上一次撞边界的残余动量不会破坏新的输入。
+        /// </remarks>
+        void Reset();
     }
 
     internal static class IScrollPhysicsExtension

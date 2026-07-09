@@ -78,6 +78,13 @@ public class ExponentialScrollPhysics : IScrollPhysics
     }
 
     /// <inheritdoc/>
+    public void Reset()
+    {
+        _remainingDistance = 0;
+        _isStable = true;
+    }
+
+    /// <inheritdoc/>
     public double Update(double currentOffset, double dt)
     {
         if (_isStable) return currentOffset;

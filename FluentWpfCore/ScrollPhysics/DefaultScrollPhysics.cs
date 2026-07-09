@@ -119,6 +119,13 @@ public class DefaultScrollPhysics : IScrollPhysics
     }
 
     /// <inheritdoc/>
+    public void Reset()
+    {
+        _velocity = 0;
+        _isStable = true;
+    }
+
+    /// <inheritdoc/>
     public double Update(double currentOffset, double dt)
     {
         if (_isStable) return currentOffset;
