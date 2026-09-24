@@ -14,7 +14,7 @@
                                IsEnableSmoothManipulating="True"
                                IsEnableSmoothScrolling="True">
         <fluent:SmoothScrollViewer.Physics>
-            <fluent:ExponentialScrollPhysics />
+            <fluent:DefaultScrollPhysics Smoothness="0.6" />
         </fluent:SmoothScrollViewer.Physics>
         <VirtualizingStackPanel Margin="10"
                                 HorizontalAlignment="Left"

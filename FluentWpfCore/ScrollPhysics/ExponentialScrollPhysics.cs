@@ -89,11 +89,15 @@ public class ExponentialScrollPhysics : IScrollPhysics
     {
         if (_isStable) return currentOffset;
 
-        if (!IsPreciseMode && Math.Abs(_remainingDistance) < StopThreshold)
+        if (Math.Abs(_remainingDistance) < StopThreshold)
         {
+            // Apply the exact remaining distance before stopping. Precise mode
+            // used to skip this branch entirely, so it approached zero without
+            // ever becoming stable and kept CompositionTarget.Rendering alive.
+            double finalOffset = currentOffset + _remainingDistance;
             _remainingDistance = 0;
             _isStable = true;
-            return currentOffset;
+            return finalOffset;
         }
 
         // 指数插值因子：1 - e^(-k*dt)

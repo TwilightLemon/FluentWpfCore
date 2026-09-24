@@ -3,5 +3,8 @@
     <Project Path="Examples/Example/Example.csproj" />
     <Project Path="Examples/ScrollViewerTest/ScrollViewerTest.csproj" Id="5da879b8-8d82-4956-9c40-3c9b0cee5c4b" />
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="FluentWpfCore.Tests/FluentWpfCore.Tests.csproj" />
+  </Folder>
   <Project Path="FluentWpfCore/FluentWpfCore.csproj" />
 </Solution>

@@ -135,8 +135,12 @@ public class DefaultScrollPhysics : IScrollPhysics
         double newOffset = currentOffset;
 
 
-        if (!_isPreciseMode&&Math.Abs(_velocity) < StopThreshold)
+        if (Math.Abs(_velocity) < StopThreshold)
         {
+            // _velocity is also the exact distance still to be applied. Snap to
+            // the target before becoming stable so precise input neither loses
+            // its sub-threshold tail nor keeps the render loop alive forever.
+            newOffset += _velocity;
             _velocity = 0;
             _isStable = true;
         }
