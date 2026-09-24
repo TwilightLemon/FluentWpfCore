@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -43,9 +42,6 @@ public class SmoothScrollViewer : ScrollViewer
 
     private double _logicalOffsetUpdateAccumulatorVertical;
     private double _logicalOffsetUpdateAccumulatorHorizontal;
-
-    private double _previousVisualOffsetVertical;
-    private double _previousVisualOffsetHorizontal;
 
     private TranslateTransform? _transform;
     private UIElement? _content;
@@ -115,12 +111,15 @@ public class SmoothScrollViewer : ScrollViewer
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        DetachContentInputHandlers();
+
         if (Content is UIElement element)
         {
             _content = element;
             _transform = new TranslateTransform();
             element.RenderTransform = _transform;
             element.RenderTransformOrigin = new Point(0, 0);
+            AttachContentInputHandlers();
         }
         else
         {
@@ -142,6 +141,7 @@ public class SmoothScrollViewer : ScrollViewer
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         StopRendering();
+        DetachContentInputHandlers();
         
         // Remove the hook when unloaded
         _hwndSource?.RemoveHook(WndProc);
@@ -365,22 +365,11 @@ public class SmoothScrollViewer : ScrollViewer
         _lastTimestamp = Stopwatch.GetTimestamp();
         _logicalOffsetUpdateAccumulatorVertical = 0;
         _logicalOffsetUpdateAccumulatorHorizontal = 0;
-        _previousVisualOffsetVertical = _currentVisualOffsetVertical;
-        _previousVisualOffsetHorizontal = _currentVisualOffsetHorizontal;
-
-        // Clear scrollbar bindings so manual value assignment during rendering doesn't conflict
-        if (_PART_VerticalScrollBar != null)
-            BindingOperations.ClearBinding(_PART_VerticalScrollBar, ScrollBar.ValueProperty);
-        if (_PART_HorizontalScrollBar != null)
-            BindingOperations.ClearBinding(_PART_HorizontalScrollBar, ScrollBar.ValueProperty);
 
         CompositionTarget.Rendering += OnRendering;
         _isRendering = true;
-        _content!.IsHitTestVisible = false;
     }
 
-    private static readonly Binding HorizontalOffsetBinding = new("HorizontalOffset") { RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent), Mode = BindingMode.OneWay };
-    private static readonly Binding VerticalOffsetBinding = new("VerticalOffset") { RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent), Mode = BindingMode.OneWay };
     private void StopRendering()
     {
         if (!_isRendering) return;
@@ -391,21 +380,29 @@ public class SmoothScrollViewer : ScrollViewer
         double finalOffsetVertical = MathExtension.Clamp(_currentVisualOffsetVertical, 0, ScrollableHeight);
         double finalOffsetHorizontal = MathExtension.Clamp(_currentVisualOffsetHorizontal, 0, ScrollableWidth);
 
-        ScrollToVerticalOffset(finalOffsetVertical);
-        ScrollToHorizontalOffset(finalOffsetHorizontal);
+        if (VerticalOffset != finalOffsetVertical)
+        {
+            ScrollToVerticalOffset(finalOffsetVertical);
+        }
 
-        _PART_VerticalScrollBar?.SetBinding(ScrollBar.ValueProperty,VerticalOffsetBinding);
-        _PART_HorizontalScrollBar?.SetBinding(ScrollBar.ValueProperty,HorizontalOffsetBinding);
+        if (HorizontalOffset != finalOffsetHorizontal)
+        {
+            ScrollToHorizontalOffset(finalOffsetHorizontal);
+        }
 
-        _visualDeltaVertical = 0;
         _logicalOffsetVertical = finalOffsetVertical;
-        _transform!.Y = 0;
+        if (_visualDeltaVertical != 0)
+        {
+            _visualDeltaVertical = 0;
+            _transform!.Y = 0;
+        }
 
-        _visualDeltaHorizontal = 0;
         _logicalOffsetHorizontal = finalOffsetHorizontal;
-        _transform!.X = 0;
-        
-        _content!.IsHitTestVisible = true;
+        if (_visualDeltaHorizontal != 0)
+        {
+            _visualDeltaHorizontal = 0;
+            _transform!.X = 0;
+        }
     }
 
     private void OnRendering(object? sender, EventArgs e)
@@ -483,7 +480,9 @@ public class SmoothScrollViewer : ScrollViewer
 
             if (_PART_VerticalScrollBar is { } verticalScrollBar)
             {
-                verticalScrollBar.Value = _currentVisualOffsetVertical;
+                // Preserve the template binding instead of clearing and rebuilding
+                // it for every animation.
+                verticalScrollBar.SetCurrentValue(ScrollBar.ValueProperty, _currentVisualOffsetVertical);
             }
         }
 
@@ -508,8 +507,32 @@ public class SmoothScrollViewer : ScrollViewer
 
             if (_PART_HorizontalScrollBar is { } horizontalScrollBar)
             {
-                horizontalScrollBar.Value = _currentVisualOffsetHorizontal;
+                horizontalScrollBar.SetCurrentValue(ScrollBar.ValueProperty, _currentVisualOffsetHorizontal);
             }
+        }
+    }
+
+    private void AttachContentInputHandlers()
+    {
+        if (_content == null) return;
+
+        _content.AddHandler(PreviewMouseDownEvent, new MouseButtonEventHandler(OnContentPreviewMouseButton), true);
+        _content.AddHandler(PreviewMouseUpEvent, new MouseButtonEventHandler(OnContentPreviewMouseButton), true);
+    }
+
+    private void DetachContentInputHandlers()
+    {
+        if (_content == null) return;
+
+        _content.RemoveHandler(PreviewMouseDownEvent, new MouseButtonEventHandler(OnContentPreviewMouseButton));
+        _content.RemoveHandler(PreviewMouseUpEvent, new MouseButtonEventHandler(OnContentPreviewMouseButton));
+    }
+
+    private void OnContentPreviewMouseButton(object sender, MouseButtonEventArgs e)
+    {
+        if (_isRendering)
+        {
+            e.Handled = true;
         }
     }
 
